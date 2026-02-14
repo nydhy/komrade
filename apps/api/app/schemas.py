@@ -94,3 +94,30 @@ class TranslateResult(BaseModel):
     generic_answer: str
     empathetic_personalized_answer: str
     safety_flag: Literal["none", "crisis"]
+
+
+class LadderPlanCreateRequest(BaseModel):
+    weeks: list[LadderWeek] = Field(min_length=8, max_length=8)
+
+
+class LadderChallengeOut(BaseModel):
+    id: uuid.UUID
+    week: int
+    title: str
+    difficulty: str
+    rationale: str
+    suggested_time: Optional[str]
+    status: str
+    completed: bool
+
+
+class LadderPlanOut(BaseModel):
+    plan_id: uuid.UUID
+    created_at: datetime
+    challenges: list[LadderChallengeOut]
+
+
+class LadderChallengeCompleteRequest(BaseModel):
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    photo_url: Optional[str] = None

@@ -11,8 +11,20 @@ from sqlalchemy.orm import Session
 from app.ai_service import GeminiService, crisis_safe_response, has_self_harm_keywords
 from app.auth import create_access_token, get_current_user, hash_password, verify_password
 from app.database import get_db
-from app.models import BuddyLink, BuddyLinkStatus, MoodCheckin, User
+from app.models import (
+    BuddyLink,
+    BuddyLinkStatus,
+    Checkin,
+    LadderChallenge,
+    LadderPlan,
+    MoodCheckin,
+    User,
+)
 from app.schemas import (
+    LadderChallengeCompleteRequest,
+    LadderChallengeOut,
+    LadderPlanCreateRequest,
+    LadderPlanOut,
     LadderRequest,
     LadderResult,
     LoginRequest,
@@ -105,6 +117,135 @@ def ai_translate(
     if result.safety_flag == "crisis":
         return crisis_safe_response()
     return result
+
+
+@app.post("/ladder/plans", response_model=LadderPlanOut, status_code=201)
+def create_ladder_plan(
+    payload: LadderPlanCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> LadderPlanOut:
+    plan_json = {"weeks": [week.model_dump() for week in payload.weeks]}
+    plan = LadderPlan(user_id=current_user.id, plan_json=plan_json)
+    db.add(plan)
+    db.flush()
+
+    challenges: list[LadderChallenge] = []
+    for week in payload.weeks:
+        challenge = LadderChallenge(
+            plan_id=plan.id,
+            week=week.week,
+            title=week.title,
+            difficulty=week.difficulty,
+            suggested_time=week.suggested_time,
+            status="pending",
+        )
+        db.add(challenge)
+        challenges.append(challenge)
+    db.flush()
+    db.commit()
+    db.refresh(plan)
+
+    return LadderPlanOut(
+        plan_id=plan.id,
+        created_at=plan.created_at,
+        challenges=[
+            LadderChallengeOut(
+                id=challenge.id,
+                week=challenge.week,
+                title=challenge.title,
+                difficulty=challenge.difficulty,
+                rationale=payload.weeks[index].rationale,
+                suggested_time=challenge.suggested_time,
+                status=challenge.status,
+                completed=False,
+            )
+            for index, challenge in enumerate(challenges)
+        ],
+    )
+
+
+@app.get("/ladder/plans/latest", response_model=LadderPlanOut)
+def latest_ladder_plan(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> LadderPlanOut:
+    plan = db.scalar(
+        select(LadderPlan)
+        .where(LadderPlan.user_id == current_user.id)
+        .order_by(LadderPlan.created_at.desc())
+    )
+    if plan is None:
+        raise HTTPException(status_code=404, detail="No ladder plan found")
+
+    challenges = list(
+        db.scalars(
+            select(LadderChallenge)
+            .where(LadderChallenge.plan_id == plan.id)
+            .order_by(LadderChallenge.week.asc())
+        ).all()
+    )
+    checkins_by_challenge: dict[uuid.UUID, bool] = {
+        challenge_id: True
+        for challenge_id in db.scalars(
+            select(Checkin.challenge_id).where(Checkin.challenge_id.in_([c.id for c in challenges]))
+        ).all()
+    }
+
+    rationale_by_week: dict[int, str] = {}
+    for item in plan.plan_json.get("weeks", []):
+        if isinstance(item, dict) and "week" in item:
+            rationale_by_week[int(item["week"])] = str(item.get("rationale", ""))
+
+    return LadderPlanOut(
+        plan_id=plan.id,
+        created_at=plan.created_at,
+        challenges=[
+            LadderChallengeOut(
+                id=challenge.id,
+                week=challenge.week,
+                title=challenge.title,
+                difficulty=challenge.difficulty,
+                rationale=rationale_by_week.get(challenge.week, ""),
+                suggested_time=challenge.suggested_time,
+                status=challenge.status,
+                completed=checkins_by_challenge.get(challenge.id, False),
+            )
+            for challenge in challenges
+        ],
+    )
+
+
+@app.post("/ladder/challenges/{challenge_id}/complete", response_model=LadderPlanOut)
+def complete_ladder_challenge(
+    challenge_id: uuid.UUID,
+    payload: LadderChallengeCompleteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> LadderPlanOut:
+    challenge = db.get(LadderChallenge, challenge_id)
+    if challenge is None:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+
+    plan = db.get(LadderPlan, challenge.plan_id)
+    if plan is None or plan.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+
+    existing_checkin = db.scalar(select(Checkin).where(Checkin.challenge_id == challenge.id))
+    if existing_checkin is None:
+        db.add(
+            Checkin(
+                challenge_id=challenge.id,
+                completed=True,
+                photo_url=payload.photo_url,
+                lat=payload.lat,
+                lng=payload.lng,
+            )
+        )
+    challenge.status = "completed"
+    db.commit()
+
+    return latest_ladder_plan(db=db, current_user=current_user)
 
 
 @app.post("/dev/seed", response_model=SeedResponse)

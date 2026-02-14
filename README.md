@@ -35,6 +35,10 @@ apps/
 - AI endpoints (protected):
   - `POST /ai/ladder`
   - `POST /ai/translate`
+- Ladder endpoints (protected):
+  - `POST /ladder/plans`
+  - `GET /ladder/plans/latest`
+  - `POST /ladder/challenges/{id}/complete`
 - Dev endpoints:
   - `POST /dev/users`
   - `GET /dev/users`
@@ -196,3 +200,12 @@ curl -H "Authorization: Bearer $TOKEN" "http://localhost:8000/dev/mood_checkins?
    ```
 
 Frontend URL: `http://localhost:3000`
+
+## Phase 5 UI
+
+- Open `http://localhost:3000/ladder`
+- Paste JWT token from `/auth/login`
+- Fill intake form and click `Generate Ladder`
+- Click `Save Plan`
+- Mark weekly challenges as `Complete`
+- XP and streak are computed client-side from completion state
