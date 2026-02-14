@@ -1,4 +1,4 @@
-# KOMRADE (Local MVP)
+# KOMRADE (Local MVP) 
 
 Phase 1 + Phase 2 scaffolding for a local-first web app where a Next.js frontend calls a FastAPI backend on `localhost` and the API persists data in local PostgreSQL.
 
