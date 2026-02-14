@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int = 120
     gemini_api_key: str = ""
     gemini_model: str = "gemini-1.5-flash"
+    ai_provider: str = "gemini"
+    ollama_base_url: str = "http://127.0.0.1:11434"
+    ollama_model: str = "llama3.1:8b"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

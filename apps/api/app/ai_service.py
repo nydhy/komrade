@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from urllib import request
 from typing import Any, Type, TypeVar
 
 import google.generativeai as genai
@@ -47,10 +48,23 @@ def crisis_safe_response() -> TranslateResult:
 
 class GeminiService:
     def __init__(self) -> None:
-        if not settings.gemini_api_key:
-            raise ValueError("GEMINI_API_KEY is missing in environment.")
-        genai.configure(api_key=settings.gemini_api_key)
-        self.model = genai.GenerativeModel(settings.gemini_model)
+        configured_provider = settings.ai_provider.lower().strip()
+        if configured_provider in {"auto", ""}:
+            self.provider = "gemini" if settings.gemini_api_key else "ollama"
+        elif configured_provider == "gemini":
+            self.provider = "gemini"
+        elif configured_provider == "ollama":
+            self.provider = "ollama"
+        else:
+            raise ValueError("Unsupported AI_PROVIDER. Use 'auto', 'gemini', or 'ollama'.")
+
+        if self.provider == "gemini":
+            if not settings.gemini_api_key:
+                raise ValueError("GEMINI_API_KEY is missing in environment.")
+            genai.configure(api_key=settings.gemini_api_key)
+            self.model = genai.GenerativeModel(settings.gemini_model)
+        elif self.provider == "ollama":
+            self.model = None
 
     def generate_ladder(self, intake: dict[str, Any]) -> LadderResult:
         prompt = (
@@ -97,8 +111,35 @@ class GeminiService:
         raise ValueError("Model returned invalid JSON after one retry.")
 
     def _call_model(self, prompt: str) -> str:
-        response = self.model.generate_content(prompt)
-        return getattr(response, "text", "") or ""
+        if self.provider == "gemini":
+            response = self.model.generate_content(prompt)
+            return getattr(response, "text", "") or ""
+        if self.provider == "ollama":
+            return self._call_ollama(prompt)
+        raise ValueError("Unsupported AI provider.")
+
+    def _call_ollama(self, prompt: str) -> str:
+        payload = json.dumps(
+            {
+                "model": settings.ollama_model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {"temperature": 0.2},
+            }
+        ).encode("utf-8")
+        req = request.Request(
+            f"{settings.ollama_base_url}/api/generate",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with request.urlopen(req, timeout=90) as resp:
+            body = resp.read().decode("utf-8")
+        data = json.loads(body)
+        text = data.get("response", "")
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError("Ollama returned empty response.")
+        return text
 
     def _try_parse_json(self, text: str, schema: Type[T]) -> T | None:
         candidate = text.strip()

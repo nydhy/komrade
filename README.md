@@ -106,6 +106,39 @@ curl -X POST http://localhost:8000/ai/translate \
   -d '{"message":"I feel like ending my life","context":{"recent_stress":"job transition"}}'
 ```
 
+### Local model option (Ollama)
+
+If Gemini quota blocks requests, switch to local inference:
+
+1. Install Ollama (macOS):
+```bash
+brew install ollama
+```
+
+2. Start Ollama server:
+```bash
+ollama serve
+```
+
+3. Pull a model (new terminal):
+```bash
+ollama pull llama3.1:8b
+```
+
+4. Update `apps/api/.env`:
+```env
+AI_PROVIDER=ollama
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=llama3.1:8b
+```
+
+5. Restart API:
+```bash
+cd apps/api
+source .venv/bin/activate
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
 Seed demo users (public):
 ```bash
 curl -X POST http://localhost:8000/dev/seed
