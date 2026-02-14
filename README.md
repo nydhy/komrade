@@ -29,10 +29,18 @@ apps/
   - `ladder_challenges`
   - `checkins`
 - Dev endpoints (no auth):
+- Auth endpoints:
+  - `POST /auth/register`
+  - `POST /auth/login`
+- AI endpoints (protected):
+  - `POST /ai/ladder`
+  - `POST /ai/translate`
+- Dev endpoints:
   - `POST /dev/users`
   - `GET /dev/users`
   - `POST /dev/mood_checkins`
   - `GET /dev/mood_checkins?user_id=...`
+  - `POST /dev/seed` (public for demo seeding)
 
 ### Run locally
 
@@ -68,28 +76,65 @@ Health check: `http://localhost:8000/health`
 
 ### Dev endpoint verification (`curl`)
 
+Register:
+```bash
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"owner@example.com","password":"OwnerPass123!","name":"Owner"}'
+```
+
+Login (save token):
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"owner@example.com","password":"OwnerPass123!"}' | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+```
+
+AI ladder (requires `GEMINI_API_KEY` in `.env`):
+```bash
+curl -X POST http://localhost:8000/ai/ladder \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"intake":{"social_comfort":"low","goals":["meet people","attend community event"],"constraints":"evenings only"}}'
+```
+
+AI translate:
+```bash
+curl -X POST http://localhost:8000/ai/translate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"message":"I feel like ending my life","context":{"recent_stress":"job transition"}}'
+```
+
+Seed demo users (public):
+```bash
+curl -X POST http://localhost:8000/dev/seed
+```
+
 Create a user:
 ```bash
 curl -X POST http://localhost:8000/dev/users \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"Alex Carter","email":"alex@example.com","lat":38.8895,"lng":-77.0353}'
 ```
 
 List users:
 ```bash
-curl http://localhost:8000/dev/users
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/dev/users
 ```
 
 Create mood check-in (replace `<USER_ID>`):
 ```bash
 curl -X POST http://localhost:8000/dev/mood_checkins \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"user_id":"<USER_ID>","mood_score":4,"note":"Tough day"}'
 ```
 
 List mood check-ins for a user:
 ```bash
-curl "http://localhost:8000/dev/mood_checkins?user_id=<USER_ID>"
+curl -H "Authorization: Bearer $TOKEN" "http://localhost:8000/dev/mood_checkins?user_id=<USER_ID>"
 ```
 
 ## Frontend (Next.js)
