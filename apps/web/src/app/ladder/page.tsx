@@ -206,6 +206,9 @@ export default function LadderPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
+        <a className="text-sm text-primary underline" href="/translate">
+          Translation Layer
+        </a>
         <div>
           <h1 className="text-3xl font-semibold">KOMRADE Social Exposure Ladder</h1>
           <p className="text-sm text-muted-foreground">

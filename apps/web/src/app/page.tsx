@@ -57,9 +57,14 @@ export default function Home() {
       <p className="text-xs text-muted-foreground">
         Calling: <code>{API_BASE_URL}/health</code>
       </p>
-      <a className="text-sm text-primary underline" href="/ladder">
-        Go to Social Exposure Ladder
-      </a>
+      <div className="flex gap-4 text-sm">
+        <a className="text-primary underline" href="/ladder">
+          Go to Social Exposure Ladder
+        </a>
+        <a className="text-primary underline" href="/translate">
+          Go to Translation Layer
+        </a>
+      </div>
     </main>
   );
 }
