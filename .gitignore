@@ -1,0 +1,15 @@
+# Node / Next
+node_modules/
+apps/web/.next/
+apps/web/out/
+
+# Python
+__pycache__/
+*.pyc
+apps/api/.venv/
+
+# Env files
+.env
+.env.local
+apps/api/.env
+apps/web/.env.local
