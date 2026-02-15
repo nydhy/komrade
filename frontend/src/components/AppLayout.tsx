@@ -60,7 +60,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
               <span className="nav-badge-wrapper">
                 <Link to="/buddies" className={navClass('/buddies')}>
-                  My Buddies
+                  My Komrades
                 </Link>
                 {pendingInvites > 0 && (
                   <span className="badge-notification">{pendingInvites}</span>
@@ -68,7 +68,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               </span>
 
               <Link to="/map" className={navClass('/map')}>
-                Map
+                Find my Komrade
               </Link>
 
               <Link to="/journey" className={navClass('/journey')}>

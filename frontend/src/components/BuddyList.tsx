@@ -88,16 +88,29 @@ export function BuddyList({ links, onUpdated }: BuddyListProps) {
         const initial = (link.other_name || link.other_email).charAt(0).toUpperCase()
 
         return (
-          <div key={link.id} className={`card card-hover animate-in ${delayClass}`}>
-            <div className="flex-between">
+          <div
+            key={link.id}
+            className={`card card-hover animate-in ${delayClass}`}
+            style={{ padding: '1.1rem 1.35rem' }}
+          >
+            <div className="flex-between" style={{ alignItems: 'flex-start' }}>
               {/* Left: avatar + info */}
-              <div className="flex-center gap-md">
-                <div className="avatar" style={{ background: 'var(--gradient-accent)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  gap: '0.85rem',
+                  flex: 1,
+                  minWidth: 0,
+                }}
+              >
+                <div className="avatar avatar-lg" style={{ background: 'var(--gradient-accent)', flexShrink: 0 }}>
                   {initial}
                 </div>
 
-                <div className="flex-col gap-xs">
-                  <div className="flex-center gap-sm">
+                <div className="flex-col" style={{ gap: '0.32rem', minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '0.5rem' }}>
                     <span className="heading-sm">{link.other_name || 'Unknown'}</span>
                     <span className={STATUS_BADGE[link.status] || 'badge'}>{link.status}</span>
                   </div>
@@ -121,7 +134,17 @@ export function BuddyList({ links, onUpdated }: BuddyListProps) {
               </div>
 
               {/* Right: action buttons */}
-              <div className="flex-center gap-sm">
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'flex-end',
+                  gap: '0.5rem',
+                  marginLeft: '1rem',
+                  paddingTop: '0.15rem',
+                  flexShrink: 0,
+                }}
+              >
                 {link.status === 'PENDING' && (
                   <button className="btn btn-success btn-sm" onClick={() => handleAccept(link.id)}>
                     Accept
