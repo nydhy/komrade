@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -206,11 +207,20 @@ export default function LadderPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+        <div className="flex items-center gap-4">
+          <Image
+            src="/komrade_logo.png"
+            alt="komrade"
+            width={84}
+            height={84}
+            priority
+          />
+          <div>
           <h1 className="text-3xl font-semibold">KOMRADE Social Exposure Ladder</h1>
           <p className="text-sm text-muted-foreground">
             Generate an 8-week plan, save it, and mark challenge completion.
           </p>
+          </div>
         </div>
         <div className="rounded-lg border bg-card px-4 py-3 text-sm">
           <p>XP: <span className="font-semibold">{xp}</span></p>

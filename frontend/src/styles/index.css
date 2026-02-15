@@ -293,6 +293,27 @@ ul, ol {
   background: rgba(10, 10, 26, 0.85);
 }
 
+.brand-logo-link {
+  display: inline-flex;
+  align-items: center;
+}
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-logo-img-header {
+  height: 42px;
+  width: auto;
+}
+
+.brand-logo-img-auth {
+  height: 120px;
+  width: auto;
+}
+
 .app-main {
   flex: 1;
   display: flex;
@@ -1577,6 +1598,14 @@ ul, ol {
 
   .app-header {
     padding: 0 var(--space-4);
+  }
+
+  .brand-logo-img-header {
+    height: 36px;
+  }
+
+  .brand-logo-img-auth {
+    height: 96px;
   }
 
   .app-main {

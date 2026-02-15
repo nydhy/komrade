@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { register, login, type RegisterRequest } from '../api/auth'
 import { setToken } from '../state/authStore'
 import { searchAddress, type GeocodeSuggestion } from '../api/geocode'
+import { BrandLogo } from '../components/BrandLogo'
 
 const STEPS = ['Account', 'Role', 'Location'] as const
 
@@ -120,7 +121,7 @@ export default function Register() {
       <div className="card glow-border animate-in" style={{ width: '100%', maxWidth: 480 }}>
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="heading-xl text-gradient mb-2">komrade</h1>
+          <BrandLogo variant="auth" className="mb-2" />
           <p className="text-muted text-sm">Join the veteran support network</p>
 
           {/* Step indicator */}
