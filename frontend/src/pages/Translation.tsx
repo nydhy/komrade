@@ -64,6 +64,7 @@ export default function Translation() {
       const data = await translateText({ message })
       setResult(data)
       await loadHistory()
+      setMessage('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Translation failed')
     } finally {
@@ -73,6 +74,7 @@ export default function Translation() {
 
   async function startRecording() {
     setError(null)
+    setMessage('')
     if (!navigator.mediaDevices?.getUserMedia) {
       setError('Microphone is not supported in this browser.')
       return
@@ -175,7 +177,7 @@ export default function Translation() {
           </button>
 
           <button className="btn btn-primary" type="submit" disabled={loading || transcribing || !message.trim()}>
-            {loading ? 'Translating...' : 'Tell me!'}
+            {loading ? 'Replying...' : 'Tell me!'}
           </button>
         </div>
 

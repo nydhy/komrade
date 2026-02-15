@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import Translation from '../pages/Translation'
+import { translateText } from '../api/translate'
 
 vi.mock('../api/translate', () => ({
   getTranslateHistory: vi.fn().mockResolvedValue([
@@ -90,13 +91,32 @@ describe('Translation page', () => {
     )
 
     const startButton = await screen.findByRole('button', { name: /start recording/i })
+    const textarea = screen.getByPlaceholderText(/type text to translate/i) as HTMLTextAreaElement
+    fireEvent.change(textarea, { target: { value: 'should clear on record' } })
     fireEvent.click(startButton)
+    expect(textarea.value).toBe('')
 
     const stopButton = await screen.findByRole('button', { name: /stop recording/i })
     fireEvent.click(stopButton)
 
-    const textarea = screen.getByPlaceholderText(/type text to translate/i) as HTMLTextAreaElement
     await waitFor(() => expect(textarea.value).toContain('voice transcript'))
     expect(trackStop).toHaveBeenCalled()
+  })
+
+  it('clears message after successful submit', async () => {
+    render(
+      <BrowserRouter>
+        <Translation />
+      </BrowserRouter>,
+    )
+
+    const textarea = await screen.findByPlaceholderText(/type text to translate/i)
+    fireEvent.change(textarea, { target: { value: 'need support' } })
+
+    const submit = screen.getByRole('button', { name: /tell me!/i })
+    fireEvent.click(submit)
+
+    await waitFor(() => expect(translateText).toHaveBeenCalled())
+    await waitFor(() => expect((textarea as HTMLTextAreaElement).value).toBe(''))
   })
 })
