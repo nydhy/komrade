@@ -1,1 +1,0 @@
-"""VetBridge backend application."""
