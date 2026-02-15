@@ -28,8 +28,5 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1"
 
-    # MongoDB
-    mongo_uri: str = "mongodb://localhost:27017"
-
 
 settings = Settings()

@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from app.api import auth, buddies, checkins, health, presence, sos, ws
 from app.api import settings as settings_api
 from app.core.config import settings
-from app.routers import ai_test, translate
+from app.routers import ai_test
 
 app = FastAPI(
     title=settings.app_name,
@@ -21,4 +21,3 @@ app.include_router(presence.router)
 app.include_router(settings_api.router)
 app.include_router(ws.router)
 app.include_router(ai_test.router)
-app.include_router(translate.router)
