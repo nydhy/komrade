@@ -1,13 +1,13 @@
 # KOMRADE (Local MVP) 
 
-Phase 1 + Phase 2 scaffolding for a local-first web app where a Next.js frontend calls a FastAPI backend on `localhost` and the API persists data in local PostgreSQL.
+Phase scaffolding for a local-first web app where a Vite + React frontend calls a FastAPI backend on `localhost` and the API persists data in local PostgreSQL.
 
 ## Repo Structure
 
 ```text
 apps/
   api/   # FastAPI backend
-  web/   # Next.js frontend (TypeScript + Tailwind + shadcn-style setup)
+  web/   # Vite + React frontend (TypeScript)
 ```
 
 ## Backend (FastAPI)
@@ -18,7 +18,7 @@ apps/
   ```json
   { "status": "ok" }
   ```
-- CORS enabled for `http://localhost:3000`
+- CORS enabled for local frontend origins (`http://localhost:3000`, `http://localhost:5173`)
 - Settings loaded via `pydantic-settings` from `.env`
 - SQLAlchemy 2.0 models + Alembic migrations for:
   - `users`
@@ -174,14 +174,13 @@ List mood check-ins for a user:
 curl -H "Authorization: Bearer $TOKEN" "http://localhost:8000/dev/mood_checkins?user_id=<USER_ID>"
 ```
 
-## Frontend (Next.js)
+## Frontend (Vite + React)
 
 ### What is implemented
 
-- `apps/web` Next.js TypeScript app
-- Tailwind CSS configured
-- Minimal shadcn-compatible setup (`cn` util + `Button` component)
-- Home page button that calls backend `/health` and shows status
+- `apps/web` Vite TypeScript app
+- Router-based pages and frontend modules from the Vite codebase
+- Dev proxy in `vite.config.ts` to backend on `http://localhost:8000`
 
 ### Run locally
 
@@ -200,12 +199,4 @@ curl -H "Authorization: Bearer $TOKEN" "http://localhost:8000/dev/mood_checkins?
    ```
 
 Frontend URL: `http://localhost:3000`
-
-## Phase 5 UI
-
-- Open `http://localhost:3000/ladder`
-- Paste JWT token from `/auth/login`
-- Fill intake form and click `Generate Ladder`
-- Click `Save Plan`
-- Mark weekly challenges as `Complete`
-- XP and streak are computed client-side from completion state
+Frontend URL: `http://localhost:5173`
