@@ -1,5 +1,7 @@
 """WebSocket endpoint with JWT auth."""
 
+from __future__ import annotations
+
 import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect

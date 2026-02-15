@@ -1,5 +1,7 @@
 """User settings model — quiet hours, privacy, etc."""
 
+from __future__ import annotations
+
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, func

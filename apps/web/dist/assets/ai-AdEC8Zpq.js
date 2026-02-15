@@ -1,0 +1,1 @@
+import{g as r,p as a}from"./index-D1iaHaPw.js";async function s(e){const t=r();if(!t)throw new Error("Not authenticated");return a("/ai/ladder",{intake:e},t)}async function c(e,t){const n=r();if(!n)throw new Error("Not authenticated");return a("/ai/translate",{message:e,context:t??{}},n)}export{s as g,c as t};

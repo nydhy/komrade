@@ -1,5 +1,7 @@
 """Auth endpoints."""
 
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 

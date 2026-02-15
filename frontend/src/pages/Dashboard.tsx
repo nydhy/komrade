@@ -82,9 +82,7 @@ export default function Dashboard() {
           Welcome{userName ? ', ' : ''}
           {userName && <span className="text-gradient">{userName}</span>}
         </h1>
-        <p className="text-secondary text-lg mt-2">
-          VetBridge — Veteran Buddy Matching
-        </p>
+        <p className="text-secondary text-lg mt-2">komrade</p>
       </div>
 
       {/* ── Error Alert ── */}
