@@ -115,7 +115,7 @@ export default function Dashboard() {
         <>
           {/* ── Nearby Buddies ── */}
           <section className="card mb-6 animate-in animate-in-delay-2">
-            <h2 className="heading-md mb-2">Nearby Buddies</h2>
+            <h2 className="heading-md mb-2">Nearby Komrades</h2>
             <p className="text-secondary text-sm mb-4">
               These are the buddies who will be notified during SOS
             </p>
