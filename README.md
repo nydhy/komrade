@@ -1,211 +1,154 @@
-# KOMRADE (Local MVP) 
+# komrade
 
-Phase 1 + Phase 2 scaffolding for a local-first web app where a Next.js frontend calls a FastAPI backend on `localhost` and the API persists data in local PostgreSQL.
+Local-first prototype with:
+- `backend/` FastAPI API
+- `frontend/` Vite + React app (main UI currently used)
+- `apps/web/` Next.js scaffold (secondary/legacy in this repo)
+
+## What Is Implemented
+
+### Backend (`backend/`)
+- JWT auth:
+  - `POST /auth/register`
+  - `POST /auth/login`
+  - `GET /auth/me`
+  - `PUT /auth/me`
+- Buddy workflows:
+  - invite/accept/block/list buddies
+- Mood check-ins:
+  - create + list current user check-ins
+- Presence/location:
+  - update presence
+  - update location
+  - nearby buddies lookup
+- SOS workflows + realtime support endpoints
+- User settings + reporting endpoints
+- AI provider abstraction:
+  - Gemini + Ollama behind one structured API service
+  - Internal provider selection via `AI_PROVIDER` (`gemini` or `ollama`)
+- Translation Layer:
+  - `POST /translate`
+  - `GET /translate/history`
+  - stores history in MongoDB (`komrade.translations`)
+- Voice input (Phase 4):
+  - `POST /stt/elevenlabs` multipart audio (`webm`/`wav`)
+  - validates type/size and calls ElevenLabs STT
+- AI structured test route:
+  - `POST /ai/test-structured`
+- Health:
+  - `GET /health`
+
+### Frontend (`frontend/`)
+- Auth pages and protected app shell
+- Dashboard, buddies, map, SOS history, profile, settings
+- Chat page (`/translate`) labeled as **Chat**
+- Chat response mode focused on empathetic personalized answer
+- History panel with user label + `komradeAI` response
+- Optional microphone recording:
+  - record audio in browser
+  - upload to `/stt/elevenlabs`
+  - transcript auto-fills chat input
+- Branding updates:
+  - custom logo support via `frontend/public/komrade_logo.png`
+  - favicon set to `komrade_logo.png`
 
 ## Repo Structure
 
 ```text
+backend/      # FastAPI app (active backend)
+frontend/     # Vite React app (active frontend)
 apps/
-  api/   # FastAPI backend
-  web/   # Next.js frontend (TypeScript + Tailwind + shadcn-style setup)
+  api/        # older API scaffold
+  web/        # Next.js scaffold
 ```
 
-## Backend (FastAPI)
+## Backend Setup
 
-### What is implemented
-
-- `GET /health` returns:
-  ```json
-  { "status": "ok" }
-  ```
-- CORS enabled for `http://localhost:3000`
-- Settings loaded via `pydantic-settings` from `.env`
-- SQLAlchemy 2.0 models + Alembic migrations for:
-  - `users`
-  - `mood_checkins`
-  - `buddy_links`
-  - `alerts`
-  - `ladder_plans`
-  - `ladder_challenges`
-  - `checkins`
-- Dev endpoints (no auth):
-- Auth endpoints:
-  - `POST /auth/register`
-  - `POST /auth/login`
-- AI endpoints (protected):
-  - `POST /ai/ladder`
-  - `POST /ai/translate`
-- Ladder endpoints (protected):
-  - `POST /ladder/plans`
-  - `GET /ladder/plans/latest`
-  - `POST /ladder/challenges/{id}/complete`
-- Dev endpoints:
-  - `POST /dev/users`
-  - `GET /dev/users`
-  - `POST /dev/mood_checkins`
-  - `GET /dev/mood_checkins?user_id=...`
-  - `POST /dev/seed` (public for demo seeding)
-
-### Run locally
-
-1. Create env file:
-   ```bash
-   cd apps/api
-   cp .env.example .env
-   ```
-2. Create and activate Python virtual environment (Python 3.11+):
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Apply the included initial migration:
-   ```bash
-   alembic upgrade head
-   ```
-5. (For future schema changes) generate a new migration:
-   ```bash
-   alembic revision --autogenerate -m "describe your change"
-   ```
-6. Run backend:
-   ```bash
-   uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-   ```
-
-Backend URL: `http://localhost:8000`  
-Health check: `http://localhost:8000/health`
-
-### Dev endpoint verification (`curl`)
-
-Register:
 ```bash
-curl -X POST http://localhost:8000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"owner@example.com","password":"OwnerPass123!","name":"Owner"}'
+cd backend
+cp .env.example .env
 ```
 
-Login (save token):
+Create/activate venv and install deps:
+
 ```bash
-TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"owner@example.com","password":"OwnerPass123!"}' | python3 -c 'import sys, json; print(json.load(sys.stdin)["access_token"])')
+python3 -m venv ../env
+source ../env/bin/activate
+pip install -r requirements.txt
 ```
 
-AI ladder (requires `GEMINI_API_KEY` in `.env`):
+Run migrations and start API:
+
 ```bash
-curl -X POST http://localhost:8000/ai/ladder \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"intake":{"social_comfort":"low","goals":["meet people","attend community event"],"constraints":"evenings only"}}'
-```
-
-AI translate:
-```bash
-curl -X POST http://localhost:8000/ai/translate \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"message":"I feel like ending my life","context":{"recent_stress":"job transition"}}'
-```
-
-### Local model option (Ollama)
-
-If Gemini quota blocks requests, switch to local inference:
-
-1. Install Ollama (macOS):
-```bash
-brew install ollama
-```
-
-2. Start Ollama server:
-```bash
-ollama serve
-```
-
-3. Pull a model (new terminal):
-```bash
-ollama pull llama3.1:8b
-```
-
-4. Update `apps/api/.env`:
-```env
-AI_PROVIDER=ollama
-OLLAMA_BASE_URL=http://127.0.0.1:11434
-OLLAMA_MODEL=llama3.1:8b
-```
-
-5. Restart API:
-```bash
-cd apps/api
-source .venv/bin/activate
+alembic upgrade head
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Seed demo users (public):
+Backend URL: `http://localhost:8000`
+
+## Backend Env Variables
+
+`backend/.env`:
+- `APP_NAME`
+- `DEBUG`
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `JWT_ALGORITHM`
+- `JWT_EXPIRE_MINUTES`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL` (default `gemini-1.5-flash`)
+- `OLLAMA_BASE_URL` (default `http://localhost:11434`)
+- `OLLAMA_MODEL` (default `llama3.1`)
+- `AI_PROVIDER` (`gemini` or `ollama`)
+- `MONGO_URI` (default `mongodb://localhost:27017`)
+- `ELEVENLABS_API_KEY` (required for `/stt/elevenlabs`)
+
+## Frontend Setup (Vite React)
+
 ```bash
-curl -X POST http://localhost:8000/dev/seed
+cd frontend
+npm install
+npm run dev
 ```
 
-Create a user:
+Frontend URL: `http://localhost:5173`
+
+Notes:
+- Vite proxies API routes to `http://localhost:8000` in `frontend/vite.config.ts`.
+- If you change proxy settings, restart the frontend dev server.
+
+## Quick API Checks
+
+Health:
 ```bash
-curl -X POST http://localhost:8000/dev/users \
-  -H "Authorization: Bearer $TOKEN" \
+curl http://localhost:8000/health
+```
+
+STT (authenticated, sample):
+```bash
+curl -X POST http://localhost:8000/stt/elevenlabs \
+  -H "Authorization: Bearer <TOKEN>" \
+  -F "audio=@/path/to/sample.webm;type=audio/webm"
+```
+
+Translate:
+```bash
+curl -X POST http://localhost:8000/translate \
+  -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Alex Carter","email":"alex@example.com","lat":38.8895,"lng":-77.0353}'
+  -d '{"message":"I am overwhelmed today"}'
 ```
 
-List users:
+## Tests
+
+Backend:
 ```bash
-curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/dev/users
+cd backend
+../env/bin/pytest -q
 ```
 
-Create mood check-in (replace `<USER_ID>`):
+Frontend:
 ```bash
-curl -X POST http://localhost:8000/dev/mood_checkins \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"<USER_ID>","mood_score":4,"note":"Tough day"}'
+cd frontend
+npm test -- --run
 ```
-
-List mood check-ins for a user:
-```bash
-curl -H "Authorization: Bearer $TOKEN" "http://localhost:8000/dev/mood_checkins?user_id=<USER_ID>"
-```
-
-## Frontend (Next.js)
-
-### What is implemented
-
-- `apps/web` Next.js TypeScript app
-- Tailwind CSS configured
-- Minimal shadcn-compatible setup (`cn` util + `Button` component)
-- Home page button that calls backend `/health` and shows status
-
-### Run locally
-
-1. Create env file:
-   ```bash
-   cd apps/web
-   cp .env.example .env.local
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run frontend:
-   ```bash
-   npm run dev
-   ```
-
-Frontend URL: `http://localhost:3000`
-
-## Phase 5 UI
-
-- Open `http://localhost:3000/ladder`
-- Paste JWT token from `/auth/login`
-- Fill intake form and click `Generate Ladder`
-- Click `Save Plan`
-- Mark weekly challenges as `Complete`
-- XP and streak are computed client-side from completion state
