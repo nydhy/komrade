@@ -1,5 +1,7 @@
 """Buddy presence/availability model."""
 
+from __future__ import annotations
+
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String, func

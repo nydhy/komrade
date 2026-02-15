@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from time import sleep
 from typing import Any
 
 import httpx
@@ -52,25 +53,58 @@ def _call_provider(provider: str, prompt: str, schema: dict[str, Any]) -> str | 
 
 
 def _call_gemini(prompt: str, schema: dict[str, Any]) -> str | dict[str, Any]:
-    if not settings.gemini_api_key:
-        raise AIServiceError("GEMINI_API_KEY is not configured")
-
     try:
         from google import genai
         from google.genai import types
     except ImportError as exc:
         raise AIServiceError("Gemini SDK is not installed. Add 'google-genai' to dependencies.") from exc
 
-    client = genai.Client(api_key=settings.gemini_api_key)
+    if settings.gemini_use_vertex:
+        if not settings.vertex_project_id:
+            raise AIServiceError("VERTEX_PROJECT_ID is required when GEMINI_USE_VERTEX=true")
+        client = genai.Client(
+            vertexai=True,
+            project=settings.vertex_project_id,
+            location=settings.vertex_location,
+        )
+    else:
+        if not settings.gemini_api_key:
+            raise AIServiceError("GEMINI_API_KEY is not configured")
+        client = genai.Client(api_key=settings.gemini_api_key)
 
-    response = client.models.generate_content(
-        model=settings.gemini_model,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=schema,
-        ),
-    )
+    model_candidates: list[str] = []
+    for model_name in (
+        settings.gemini_model,
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-1.5-flash",
+    ):
+        if model_name and model_name not in model_candidates:
+            model_candidates.append(model_name)
+
+    response = None
+    last_error: Exception | None = None
+    for model_name in model_candidates:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=schema,
+                ),
+            )
+            break
+        except Exception as exc:  # noqa: BLE001 - bubble with context below
+            message = str(exc).lower()
+            # Auto-fallback when a configured model is unavailable on this API version/project.
+            if "not found" in message or "not supported for generatecontent" in message:
+                last_error = exc
+                continue
+            raise AIServiceError(f"Gemini request failed: {exc}") from exc
+
+    if response is None:
+        raise AIServiceError(f"Gemini model unavailable. Tried {model_candidates}. Last error: {last_error}")
 
     parsed = getattr(response, "parsed", None)
     if isinstance(parsed, dict):
@@ -91,11 +125,26 @@ def _call_ollama(prompt: str, schema: dict[str, Any]) -> str | dict[str, Any]:
         "format": schema,
     }
 
-    try:
-        response = httpx.post(url, json=payload, timeout=45.0)
-        response.raise_for_status()
-    except httpx.HTTPError as exc:
-        raise AIServiceError(f"Ollama request failed: {exc}") from exc
+    timeout = httpx.Timeout(
+        timeout=settings.ollama_timeout_seconds,
+        connect=min(10.0, settings.ollama_timeout_seconds),
+        read=settings.ollama_timeout_seconds,
+        write=min(15.0, settings.ollama_timeout_seconds),
+    )
+
+    last_error: Exception | None = None
+    attempts = max(1, settings.ollama_max_retries)
+    for attempt in range(attempts):
+        try:
+            response = httpx.post(url, json=payload, timeout=timeout)
+            response.raise_for_status()
+            break
+        except httpx.HTTPError as exc:
+            last_error = exc
+            if attempt < attempts - 1:
+                sleep(0.5 * (2 ** attempt))
+                continue
+            raise AIServiceError(f"Ollama request failed: {exc}") from exc
 
     data = response.json()
     if "response" not in data:

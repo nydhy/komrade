@@ -1,5 +1,7 @@
 """Mood check-ins API."""
 
+from __future__ import annotations
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session

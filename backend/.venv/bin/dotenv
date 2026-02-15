@@ -1,4 +1,4 @@
-#!/Users/sriramm/Cursor_Projects/vetbridge/backend/.venv/bin/python3.12
+#!/Users/work/Developer/komrade/backend/.venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
