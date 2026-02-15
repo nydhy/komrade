@@ -52,6 +52,14 @@ export default function Settings() {
     }
   }
 
+  function openCrisisResources() {
+    window.dispatchEvent(new Event('open-crisis-resources'))
+  }
+
+  function showPrivacyNotice() {
+    window.dispatchEvent(new Event('show-privacy-banner'))
+  }
+
   if (loading) {
     return (
       <div className="page-container flex-center" style={{ minHeight: '40vh' }}>
@@ -138,8 +146,56 @@ export default function Settings() {
           </label>
         </section>
 
+        {/* Privacy & Terms */}
+        <section className="card animate-in animate-in-delay-3">
+          <h2 className="heading-md mb-2">Privacy & Disclaimers</h2>
+          <p className="text-muted text-sm mb-4">
+            Transparency around data handling and mental health support boundaries.
+          </p>
+          <div className="divider mb-4" />
+
+          <div className="privacy-card">
+            <div className="privacy-card-header">
+              <span className="privacy-card-icon" aria-hidden>🔒</span>
+              <h4>Your Data is Private</h4>
+            </div>
+            <p>
+              Your data is encrypted and stored securely. We never sell or share your personal
+              information with third parties. You can control your data visibility from settings.
+            </p>
+            <button type="button" className="btn btn-secondary btn-small" onClick={showPrivacyNotice}>
+              Show Privacy Notice
+            </button>
+          </div>
+
+          <div className="privacy-card">
+            <div className="privacy-card-header">
+              <span className="privacy-card-icon" aria-hidden>🏥</span>
+              <h4>Medical Disclaimer</h4>
+            </div>
+            <p>
+              Komrade is a wellness and skill-building tool designed to complement professional
+              mental health care. It is not a substitute for therapy, counseling, or medical treatment.
+            </p>
+          </div>
+
+          <div className="privacy-card">
+            <div className="privacy-card-header">
+              <span className="privacy-card-icon" aria-hidden>📞</span>
+              <h4>Crisis Resources</h4>
+            </div>
+            <p>
+              If you&apos;re experiencing a mental health crisis, immediate help is available 24/7
+              through the Veterans Crisis Line.
+            </p>
+            <button type="button" className="btn btn-secondary btn-small" onClick={openCrisisResources}>
+              View Crisis Resources
+            </button>
+          </div>
+        </section>
+
         {/* Save */}
-        <div className="animate-in animate-in-delay-3">
+        <div className="animate-in animate-in-delay-4">
           <button
             type="submit"
             className="btn btn-primary btn-lg"
