@@ -36,7 +36,7 @@ export default function Login() {
       <div className="card glow-border animate-in" style={{ width: '100%', maxWidth: 440 }}>
         {/* ── Logo / Header ── */}
         <div className="text-center mb-8">
-          <h1 className="heading-xl text-gradient mb-2">VetBridge</h1>
+          <h1 className="heading-xl text-gradient mb-2">komrade</h1>
           <p className="text-secondary">Welcome back to the veteran support network</p>
         </div>
 

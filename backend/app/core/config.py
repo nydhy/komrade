@@ -12,7 +12,7 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    app_name: str = "VetBridge API"
+    app_name: str = "komrade"
     debug: bool = False
     database_url: str = "postgresql://postgres:postgres@localhost:5433/vetbridge"
     api_prefix: str = "/api"

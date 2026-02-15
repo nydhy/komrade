@@ -1,1 +1,1 @@
-"""VetBridge backend application."""
+"""komrade backend application."""

@@ -1,5 +1,5 @@
 /**
- * HTTP client for VetBridge API.
+ * HTTP client for komrade API.
  */
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''

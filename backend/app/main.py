@@ -1,4 +1,4 @@
-"""VetBridge FastAPI application."""
+"""komrade FastAPI application."""
 
 from fastapi import FastAPI
 

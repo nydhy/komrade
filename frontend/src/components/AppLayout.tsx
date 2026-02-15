@@ -35,7 +35,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className="app-container">
       <header className="app-header">
         <Link to="/" className="heading-md text-gradient">
-          VetBridge
+          komrade
         </Link>
 
         <nav className="flex-center gap-sm">
