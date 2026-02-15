@@ -1,5 +1,7 @@
 """SOS alert policy constants."""
 
+from __future__ import annotations
+
 # Minimum accepted buddies required to create an SOS
 MIN_BUDDIES_FOR_SOS = 1
 

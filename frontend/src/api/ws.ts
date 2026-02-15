@@ -21,6 +21,11 @@ let pingInterval: ReturnType<typeof setInterval> | null = null
 
 function getWsUrl(): string {
   const token = getToken()
+  const explicitBase = import.meta.env.VITE_WS_URL as string | undefined
+  if (explicitBase && explicitBase.trim()) {
+    const base = explicitBase.trim().replace(/\/$/, '')
+    return `${base}?token=${encodeURIComponent(token ?? '')}`
+  }
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const host = window.location.host
   return `${proto}//${host}/ws?token=${token}`
@@ -55,8 +60,8 @@ export function connectWs(): void {
     }
   }
 
-  socket.onclose = () => {
-    console.log('[WS] Disconnected, reconnecting in 3s...')
+  socket.onclose = (event) => {
+    console.log(`[WS] Disconnected (code=${event.code}, reason=${event.reason || 'n/a'}), reconnecting in 3s...`)
     cleanup()
     reconnectTimer = setTimeout(connectWs, 3000)
   }

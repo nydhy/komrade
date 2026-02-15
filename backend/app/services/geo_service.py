@@ -1,5 +1,7 @@
 """Geo and buddy ranking service."""
 
+from __future__ import annotations
+
 import math
 from dataclasses import dataclass
 from datetime import datetime, timezone

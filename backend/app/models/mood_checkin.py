@@ -1,5 +1,7 @@
 """Mood check-in model."""
 
+from __future__ import annotations
+
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Text, func

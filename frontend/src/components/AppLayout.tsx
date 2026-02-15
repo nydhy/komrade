@@ -59,6 +59,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                 Map
               </Link>
 
+              <Link to="/journey" className={navClass('/journey')}>
+                Journey
+              </Link>
+
               <Link to="/translate" className={navClass('/translate')}>
                 komradeAI
               </Link>

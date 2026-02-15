@@ -1,5 +1,7 @@
 """Password hashing and JWT utilities."""
 
+from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -16,7 +18,11 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain: str, hashed: str) -> bool:
     """Verify a plain password against a hash."""
-    return bcrypt.checkpw(plain.encode(), hashed.encode())
+    try:
+        return bcrypt.checkpw(plain.encode(), hashed.encode())
+    except (ValueError, TypeError):
+        # Handles legacy/invalid hashes gracefully as auth failure instead of 500.
+        return False
 
 
 def create_access_token(subject: str | int, extra: dict[str, Any] | None = None) -> str:

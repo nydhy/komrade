@@ -11,6 +11,7 @@ const Profile = lazy(() => import('../pages/Profile'))
 const BuddyMap = lazy(() => import('../pages/BuddyMap'))
 const SosHistory = lazy(() => import('../pages/SosHistory'))
 const Translation = lazy(() => import('../pages/Translation'))
+const Journey = lazy(() => import('../pages/Journey'))
 
 export const routes = [
   {
@@ -95,6 +96,16 @@ export const routes = [
       <Suspense fallback={<div>Loading...</div>}>
         <ProtectedRoute>
           <BuddyMap />
+        </ProtectedRoute>
+      </Suspense>
+    ),
+  },
+  {
+    path: '/journey',
+    element: (
+      <Suspense fallback={<div>Loading...</div>}>
+        <ProtectedRoute>
+          <Journey />
         </ProtectedRoute>
       </Suspense>
     ),

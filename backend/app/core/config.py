@@ -1,5 +1,7 @@
 """Application configuration."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,6 +21,8 @@ class Settings(BaseSettings):
 
     app_name: str = "komrade"
     debug: bool = False
+    journey_debug: bool = True
+    journey_force_local: bool = False
     database_url: str = "postgresql://postgres:postgres@localhost:5433/vetbridge"
     api_prefix: str = "/api"
 
@@ -29,9 +33,14 @@ class Settings(BaseSettings):
 
     # AI providers
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-1.5-flash"
+    gemini_model: str = "gemini-2.0-flash-lite"
+    gemini_use_vertex: bool = False
+    vertex_project_id: str = ""
+    vertex_location: str = "us-central1"
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "llama3.1"
+    ollama_model: str = "gemini-3-flash-preview:latest"
+    ollama_timeout_seconds: float = 90.0
+    ollama_max_retries: int = 2
     ai_provider: str = "ollama"
 
     # MongoDB
