@@ -2681,6 +2681,19 @@ ul, ol {
   overflow: hidden;
 }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: var(--space-4);
+}
+
 .text-center { text-align: center; }
 .text-right  { text-align: right; }
 .text-left   { text-align: left; }

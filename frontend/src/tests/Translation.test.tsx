@@ -24,7 +24,7 @@ vi.mock('../api/translate', () => ({
 }))
 
 describe('Translation page', () => {
-  it('renders translation page and history', async () => {
+  it('renders translation page without history panel', async () => {
     render(
       <BrowserRouter>
         <Translation />
@@ -32,21 +32,7 @@ describe('Translation page', () => {
     )
 
     await screen.findByRole('heading', { name: /chat with komradeai/i })
-    expect(await screen.findByText(/history question/i)).toBeInTheDocument()
-  })
-
-  it('loads outputs when clicking a history item', async () => {
-    render(
-      <BrowserRouter>
-        <Translation />
-      </BrowserRouter>,
-    )
-
-    const historyButton = await screen.findByRole('button', { name: /history question/i })
-    fireEvent.click(historyButton)
-
-    const matches = await screen.findAllByText(/history response/i)
-    expect(matches.length).toBeGreaterThan(0)
+    expect(screen.queryByRole('heading', { name: /history/i })).not.toBeInTheDocument()
   })
 
   it('fills message from microphone transcript', async () => {
@@ -117,6 +103,19 @@ describe('Translation page', () => {
     fireEvent.click(submit)
 
     await waitFor(() => expect(translateText).toHaveBeenCalled())
+    expect(translateText).toHaveBeenCalledWith({
+      message: 'need support',
+      context: {
+        chat_history: [
+          {
+            user_message: 'history question',
+            komrade_ai_response: 'history response',
+            safety_flag: 'normal',
+            created_at: '2026-01-01T00:00:00Z',
+          },
+        ],
+      },
+    })
     await waitFor(() => expect((textarea as HTMLTextAreaElement).value).toBe(''))
   })
 })

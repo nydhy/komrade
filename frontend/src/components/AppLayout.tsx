@@ -24,10 +24,20 @@ export function AppLayout({ children }: AppLayoutProps) {
   // Notification counts (only meaningful when authenticated)
   const { pendingInvites, incomingSOS } = useNotifications()
 
-  async function handleLogout() {
-    try { await updatePresence('OFFLINE') } catch { /* ignore */ }
+  function doLogout() {
     clearToken()
+    setShowLogoutDialog(false)
     navigate('/login', { replace: true })
+  }
+
+  async function handleLogoutOffline() {
+    try { await updatePresence('OFFLINE') } catch { /* ignore */ }
+    doLogout()
+  }
+
+  function handleLogoutStayVisible() {
+    // Keep current presence status — just log out without changing it.
+    doLogout()
   }
 
   function navClass(path: string) {
@@ -72,7 +82,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
               <span className="nav-badge-wrapper">
                 <Link to="/buddies" className={navClass('/buddies')}>
-                  My Buddies
+                  My Komrades
                 </Link>
                 {pendingInvites > 0 && (
                   <span className="badge-notification">{pendingInvites}</span>
@@ -80,7 +90,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               </span>
 
               <Link to="/map" className={navClass('/map')}>
-                Map
+                Find my Komrade
               </Link>
 
               <Link to="/journey" className={navClass('/journey')}>
@@ -88,7 +98,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               </Link>
 
               <Link to="/translate" className={navClass('/translate')}>
-                Chat
+                komradeAI
               </Link>
 
               <span className="nav-badge-wrapper">
@@ -114,7 +124,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
               <button
                 type="button"
-                onClick={handleLogout}
+                onClick={() => setShowLogoutDialog(true)}
                 className="btn btn-ghost btn-sm"
               >
                 Logout

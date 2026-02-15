@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getMyCheckins, type MoodCheckin } from '../api/checkins'
-import { getMe, type UserMe } from '../api/auth'
+import { getMe } from '../api/auth'
 import { getBuddies, type BuddyLinkWithUser } from '../api/buddies'
 import { MoodCheckinCard } from '../components/MoodCheckinCard'
 import { MoodCheckinForm } from '../components/MoodCheckinForm'
@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [checkins, setCheckins] = useState<MoodCheckin[]>([])
   const [buddyLinks, setBuddyLinks] = useState<BuddyLinkWithUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null)
   const [role, setRole] = useState<string>('')
   const [userName, setUserName] = useState<string>('')
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -27,6 +28,7 @@ export default function Dashboard() {
         return
       }
       const me = await getMe(token)
+      setCurrentUserId(me.id)
       setRole(me.role)
       setUserName(me.full_name)
       const [checkinData, links] = await Promise.all([getMyCheckins(7), getBuddies()])
@@ -49,11 +51,15 @@ export default function Dashboard() {
 
   const buddyOptions = buddyLinks
     .filter((l) => l.status === 'ACCEPTED')
-    .map((l) => ({
-      id: l.buddy_id,
-      name: l.other_name || l.other_email,
-      email: l.other_email,
-    }))
+    .map((l) => {
+      const otherId = currentUserId !== null && l.buddy_id === currentUserId ? l.veteran_id : l.buddy_id
+      return {
+        id: otherId,
+        name: l.other_name || l.other_email,
+        email: l.other_email,
+      }
+    })
+    .filter((option, index, arr) => arr.findIndex((x) => x.id === option.id) === index)
 
   /* ── Loading skeleton ── */
   if (loading) {
@@ -79,10 +85,9 @@ export default function Dashboard() {
       {/* ── Welcome Banner ── */}
       <div className="page-header animate-in">
         <h1 className="heading-xl">
-          Welcome{userName ? ', ' : ''}
+          Welcome to Komrade{userName ? ', ' : ''}
           {userName && <span className="text-gradient">{userName}</span>}
         </h1>
-        <p className="text-secondary text-lg mt-2">komrade</p>
       </div>
 
       {/* ── Error Alert ── */}
@@ -110,7 +115,7 @@ export default function Dashboard() {
         <>
           {/* ── Nearby Buddies ── */}
           <section className="card mb-6 animate-in animate-in-delay-2">
-            <h2 className="heading-md mb-2">Nearby Buddies</h2>
+            <h2 className="heading-md mb-2">Nearby Komrades</h2>
             <p className="text-secondary text-sm mb-4">
               These are the buddies who will be notified during SOS
             </p>
