@@ -60,7 +60,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               </Link>
 
               <Link to="/translate" className={navClass('/translate')}>
-                Chat
+                komradeAI
               </Link>
 
               <span className="nav-badge-wrapper">

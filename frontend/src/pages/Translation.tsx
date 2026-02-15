@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { getMe } from '../api/auth'
 import {
   getTranslateHistory,
   transcribeAudio,
@@ -7,7 +6,6 @@ import {
   type TranslateHistoryItem,
   type TranslateResponse,
 } from '../api/translate'
-import { getToken } from '../state/authStore'
 
 export default function Translation() {
   const [message, setMessage] = useState('')
@@ -15,7 +13,6 @@ export default function Translation() {
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<TranslateResponse | null>(null)
   const [history, setHistory] = useState<TranslateHistoryItem[]>([])
-  const [userDisplayName, setUserDisplayName] = useState('You')
   const [recording, setRecording] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -35,33 +32,25 @@ export default function Translation() {
     loadHistory()
   }, [])
 
-  useEffect(() => {
-    async function loadUser() {
-      let token: string | null = null
-      try {
-        token = getToken()
-      } catch {
-        return
-      }
-      if (!token) return
-      try {
-        const me = await getMe(token)
-        if (me.full_name?.trim()) {
-          setUserDisplayName(me.full_name.trim())
-        }
-      } catch {
-        // keep default label
-      }
-    }
-    loadUser()
-  }, [])
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
     try {
-      const data = await translateText({ message })
+      const contextHistory = [...history]
+        .reverse()
+        .map((item) => ({
+          user_message: item.question,
+          komrade_ai_response: item.response,
+          safety_flag: item.safety_flag,
+          created_at: item.created_at,
+        }))
+      const data = await translateText({
+        message,
+        context: {
+          chat_history: contextHistory,
+        },
+      })
       setResult(data)
       await loadHistory()
       setMessage('')
@@ -137,14 +126,6 @@ export default function Translation() {
     }
   }
 
-  function loadFromHistory(item: TranslateHistoryItem) {
-    setMessage(item.question)
-    setResult({
-      empathetic_personalized_answer: item.response,
-      safety_flag: item.safety_flag,
-    })
-  }
-
   return (
     <div className="page-container">
       <div className="page-header animate-in">
@@ -185,35 +166,8 @@ export default function Translation() {
       </form>
 
       <div className="card animate-in animate-in-delay-2" style={{ marginBottom: '1rem' }}>
-        <h2 className="heading-sm mb-2">Empathetic Personalized Answer</h2>
+        <h2 className="heading-sm mb-2">Personalized Answer</h2>
         <p className="text-secondary">{result?.empathetic_personalized_answer ?? 'No output yet.'}</p>
-      </div>
-
-      <div className="card animate-in animate-in-delay-3">
-        <h2 className="heading-sm mb-3">History</h2>
-        {history.length === 0 ? (
-          <p className="text-muted">No translation history yet.</p>
-        ) : (
-          <div className="flex-col gap-sm">
-            {history.map((item, idx) => (
-              <button
-                key={`${item.created_at}-${idx}`}
-                type="button"
-                className="btn btn-ghost"
-                style={{ textAlign: 'left', justifyContent: 'space-between' }}
-                onClick={() => loadFromHistory(item)}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                  <span><strong>{userDisplayName}:</strong> {item.question}</span>
-                  <span className="text-secondary text-sm"><strong>komradeAI:</strong> {item.response}</span>
-                  <span className="text-muted text-xs">
-                    {new Date(item.created_at).toLocaleString()} · {item.safety_flag}
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   )
