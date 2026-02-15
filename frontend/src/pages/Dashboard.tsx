@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getMyCheckins, type MoodCheckin } from '../api/checkins'
-import { getMe, type UserMe } from '../api/auth'
+import { getMe } from '../api/auth'
 import { getBuddies, type BuddyLinkWithUser } from '../api/buddies'
 import { MoodCheckinCard } from '../components/MoodCheckinCard'
 import { MoodCheckinForm } from '../components/MoodCheckinForm'
