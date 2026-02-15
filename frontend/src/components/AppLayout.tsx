@@ -4,6 +4,7 @@ import { isAuthenticated, clearToken } from '../state/authStore'
 import { useGlobalWs } from '../state/realtime'
 import { useNotifications } from '../context/NotificationContext'
 import { updatePresence } from '../api/presence'
+import { BrandLogo } from './BrandLogo'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -46,8 +47,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="app-container">
       <header className="app-header">
-        <Link to="/" className="heading-md text-gradient">
-          VetBridge
+        <Link to="/" className="brand-logo-link" aria-label="komrade home">
+          <BrandLogo variant="header" />
         </Link>
 
         <nav className="flex-center gap-sm">
@@ -68,6 +69,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 
               <Link to="/map" className={navClass('/map')}>
                 Map
+              </Link>
+
+              <Link to="/translate" className={navClass('/translate')}>
+                komradeAI
               </Link>
 
               <span className="nav-badge-wrapper">

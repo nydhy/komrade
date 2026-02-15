@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { login, type LoginRequest } from '../api/auth'
 import { setToken } from '../state/authStore'
 import { updatePresence } from '../api/presence'
+import { BrandLogo } from '../components/BrandLogo'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -36,7 +37,8 @@ export default function Login() {
       <div className="card glow-border animate-in" style={{ width: '100%', maxWidth: 440 }}>
         {/* ── Logo / Header ── */}
         <div className="text-center mb-8">
-          <h1 className="heading-xl text-gradient mb-2">VetBridge</h1>
+          <BrandLogo variant="auth" className="mb-2" />
+          <h1 className="sr-only">Login</h1>
           <p className="text-secondary">Welcome back to the veteran support network</p>
         </div>
 
