@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { acceptInvite, blockLink, type BuddyLinkWithUser } from '../api/buddies'
+import { acceptInvite, blockLink, removeBuddy, withdrawInvite, type BuddyLinkWithUser } from '../api/buddies'
 
 interface BuddyListProps {
   links: BuddyLinkWithUser[]
-  onUpdated: () => void
+  onUpdated: (optimisticRemoveId?: number) => void
 }
 
 /** Reverse geocode lat/lng to a human-readable label using Nominatim */
@@ -39,6 +39,7 @@ const DELAY_CLASSES = [
 
 export function BuddyList({ links, onUpdated }: BuddyListProps) {
   const [labels, setLabels] = useState<Record<number, string>>({})
+  const [withdrawingId, setWithdrawingId] = useState<number | null>(null)
 
   useEffect(() => {
     const toResolve = links.filter(
@@ -70,6 +71,31 @@ export function BuddyList({ links, onUpdated }: BuddyListProps) {
       onUpdated()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Block failed')
+    }
+  }
+
+  async function handleWithdraw(linkId: number) {
+    if (!confirm('Withdraw this buddy request?')) return
+    setWithdrawingId(linkId)
+    onUpdated(linkId)
+    try {
+      await withdrawInvite(linkId)
+      onUpdated()
+    } catch (err) {
+      onUpdated()
+      alert(err instanceof Error ? err.message : 'Withdraw failed')
+    } finally {
+      setWithdrawingId(null)
+    }
+  }
+
+  async function handleRemove(linkId: number) {
+    if (!confirm('Remove this buddy? This will delete the connection entirely.')) return
+    try {
+      await removeBuddy(linkId)
+      onUpdated()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Remove failed')
     }
   }
 
@@ -120,17 +146,36 @@ export function BuddyList({ links, onUpdated }: BuddyListProps) {
                 </div>
               </div>
 
-              {/* Right: action buttons */}
+              {/* Right: role-aware action buttons */}
               <div className="flex-center gap-sm">
-                {link.status === 'PENDING' && (
-                  <button className="btn btn-success btn-sm" onClick={() => handleAccept(link.id)}>
-                    Accept
+                {link.status === 'PENDING' && link.is_sender && (
+                  <button
+                    className="btn btn-warning btn-sm"
+                    onClick={() => handleWithdraw(link.id)}
+                    disabled={withdrawingId === link.id}
+                  >
+                    {withdrawingId === link.id ? 'Withdrawing...' : 'Withdraw'}
                   </button>
                 )}
-                {(link.status === 'PENDING' || link.status === 'ACCEPTED') && (
-                  <button className="btn btn-danger btn-sm" onClick={() => handleBlock(link.id)}>
-                    Block
-                  </button>
+                {link.status === 'PENDING' && !link.is_sender && (
+                  <>
+                    <button className="btn btn-success btn-sm" onClick={() => handleAccept(link.id)}>
+                      Accept
+                    </button>
+                    <button className="btn btn-danger btn-sm" onClick={() => handleBlock(link.id)}>
+                      Decline
+                    </button>
+                  </>
+                )}
+                {link.status === 'ACCEPTED' && (
+                  <>
+                    <button className="btn btn-danger btn-sm" onClick={() => handleBlock(link.id)}>
+                      Block
+                    </button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => handleRemove(link.id)}>
+                      Remove
+                    </button>
+                  </>
                 )}
               </div>
             </div>

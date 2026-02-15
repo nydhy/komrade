@@ -6,24 +6,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.sos_policies import COOLDOWN_SECONDS, DEFAULT_SOS_RADIUS_KM, ESCALATE_AFTER_MIN, ESCALATE_MORE_RECIPIENTS, MIN_BUDDIES_FOR_SOS
-from app.models.buddy_link import BuddyLink
 from app.models.mood_checkin import MoodCheckin
 from app.models.sos_alert import SosAlert
 from app.models.sos_recipient import SosRecipient
 from app.models.user import User
 from app.models.user_settings import UserSettings
+from app.services.buddy_service import get_all_accepted_buddy_ids
 from app.services.geo_service import get_ranked_buddies
-
-
-def get_accepted_buddy_ids(db: Session, veteran_id: int) -> list[int]:
-    """Get buddy user IDs for ACCEPTED links only (not blocked/pending)."""
-    result = db.execute(
-        select(BuddyLink.buddy_id).where(
-            BuddyLink.veteran_id == veteran_id,
-            BuddyLink.status == "ACCEPTED",
-        )
-    )
-    return [r for r in result.scalars().all()]
 
 
 def _get_sos_radius(db: Session, user_id: int) -> float:
@@ -49,7 +38,7 @@ def _select_best_buddies(db: Session, veteran_id: int, n: int) -> list[int]:
     
     # Fallback: if nobody is online within radius, use all accepted buddies
     if not selected:
-        all_ids = get_accepted_buddy_ids(db, veteran_id)
+        all_ids = get_all_accepted_buddy_ids(db, veteran_id)
         selected = all_ids[:n]
     
     return selected
@@ -86,13 +75,21 @@ def create_sos_manual(
     - Otherwise: auto-select 3-5 best-ranked.
     """
     _check_cooldown(db, veteran_id)
-    all_ids = get_accepted_buddy_ids(db, veteran_id)
+    all_ids = get_all_accepted_buddy_ids(db, veteran_id)
     if len(all_ids) < MIN_BUDDIES_FOR_SOS:
         raise ValueError(f"Need at least {MIN_BUDDIES_FOR_SOS} accepted buddy/buddies to create SOS")
 
     if buddy_ids is not None and len(buddy_ids) > 0:
         invalid = [bid for bid in buddy_ids if bid not in all_ids]
         if invalid:
+            # #region agent log
+            try:
+                import json
+                with open("/Users/sriramm/Cursor_Projects/.cursor/debug.log", "a") as f:
+                    f.write(json.dumps({"location":"sos_service.py:create_sos_manual","message":"Invalid buddy IDs","data":{"veteran_id":veteran_id,"buddy_ids":buddy_ids,"all_ids":all_ids,"invalid":invalid},"timestamp":__import__("time").time()*1000,"hypothesisId":"H2"}) + "\n")
+            except Exception:
+                pass
+            # #endregion
             raise ValueError(f"Invalid buddy IDs (not accepted): {invalid}")
         selected = buddy_ids
     elif broadcast:
@@ -116,6 +113,14 @@ def create_sos_manual(
 
     db.commit()
     db.refresh(alert)
+    # #region agent log
+    try:
+        import json
+        with open("/Users/sriramm/Cursor_Projects/.cursor/debug.log", "a") as f:
+            f.write(json.dumps({"location":"sos_service.py:create_sos_manual","message":"SOS created","data":{"alert_id":alert.id,"veteran_id":veteran_id,"selected":selected},"timestamp":__import__("time").time()*1000,"hypothesisId":"H2"}) + "\n")
+    except Exception:
+        pass
+    # #endregion
     return alert
 
 
@@ -141,7 +146,7 @@ def create_sos_from_checkin(
         raise ValueError("Check-in does not trigger SOS (need wants_company or mood 1-2)")
 
     _check_cooldown(db, veteran_id)
-    all_ids = get_accepted_buddy_ids(db, veteran_id)
+    all_ids = get_all_accepted_buddy_ids(db, veteran_id)
     if len(all_ids) < MIN_BUDDIES_FOR_SOS:
         raise ValueError(f"Need at least {MIN_BUDDIES_FOR_SOS} accepted buddy/buddies to create SOS")
 
@@ -191,6 +196,24 @@ def get_sos(db: Session, sos_id: int, user_id: int) -> SosAlert | None:
     if not alert or alert.veteran_id != user_id:
         return None
     return alert
+
+
+def delete_sos(db: Session, sos_id: int, user_id: int) -> None:
+    """Delete an SOS alert and its recipients. Only veteran owner can delete."""
+    alert = db.get(SosAlert, sos_id)
+    if not alert:
+        raise ValueError("SOS not found")
+    if alert.veteran_id != user_id:
+        raise ValueError("Only the veteran who created this SOS can delete it")
+
+    # Delete recipients first (foreign key), then the alert
+    db.execute(
+        select(SosRecipient).where(SosRecipient.sos_alert_id == sos_id)
+    )
+    for rec in db.execute(select(SosRecipient).where(SosRecipient.sos_alert_id == sos_id)).scalars().all():
+        db.delete(rec)
+    db.delete(alert)
+    db.commit()
 
 
 def close_sos(db: Session, sos_id: int, user_id: int) -> SosAlert:
@@ -243,7 +266,7 @@ def escalate_sos(db: Session, sos_id: int, user_id: int) -> SosAlert:
     existing_ids = set(db.execute(existing_stmt).scalars().all())
 
     # Get all accepted buddies, filter out existing
-    all_ids = get_accepted_buddy_ids(db, alert.veteran_id)
+    all_ids = get_all_accepted_buddy_ids(db, alert.veteran_id)
     candidates = [bid for bid in all_ids if bid not in existing_ids]
     if not candidates:
         raise ValueError("No additional buddies available to escalate to.")

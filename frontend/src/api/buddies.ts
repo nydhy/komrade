@@ -2,7 +2,7 @@
  * Buddies API client.
  */
 
-import { get, post } from './http'
+import { del, get, post } from './http'
 import { getToken } from '../state/authStore'
 
 export interface BuddyLink {
@@ -21,6 +21,7 @@ export interface BuddyLinkWithUser extends BuddyLink {
   other_longitude: number | null
   other_location_label: string | null
   other_presence_status: string | null
+  is_sender: boolean
 }
 
 export interface InviteRequest {
@@ -45,6 +46,18 @@ export async function blockLink(linkId: number): Promise<BuddyLink> {
   const token = getToken()
   if (!token) throw new Error('Not authenticated')
   return post<BuddyLink>(`/buddies/${linkId}/block`, {}, token)
+}
+
+export async function withdrawInvite(linkId: number): Promise<{ status: string }> {
+  const token = getToken()
+  if (!token) throw new Error('Not authenticated')
+  return post<{ status: string }>(`/buddies/${linkId}/withdraw`, {}, token)
+}
+
+export async function removeBuddy(linkId: number): Promise<{ status: string }> {
+  const token = getToken()
+  if (!token) throw new Error('Not authenticated')
+  return del<{ status: string }>(`/buddies/${linkId}`, token)
 }
 
 export async function getBuddies(): Promise<BuddyLinkWithUser[]> {

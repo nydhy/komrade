@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { isAuthenticated, clearToken } from '../state/authStore'
 import { useGlobalWs } from '../state/realtime'
@@ -12,6 +13,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const authenticated = isAuthenticated()
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   // Connect WebSocket globally when authenticated
   useGlobalWs()
@@ -19,10 +21,20 @@ export function AppLayout({ children }: AppLayoutProps) {
   // Notification counts (only meaningful when authenticated)
   const { pendingInvites, incomingSOS } = useNotifications()
 
-  async function handleLogout() {
-    try { await updatePresence('OFFLINE') } catch { /* ignore */ }
+  function doLogout() {
     clearToken()
+    setShowLogoutDialog(false)
     navigate('/login', { replace: true })
+  }
+
+  async function handleLogoutOffline() {
+    try { await updatePresence('OFFLINE') } catch { /* ignore */ }
+    doLogout()
+  }
+
+  function handleLogoutStayVisible() {
+    // Keep current presence status — just log out without changing it
+    doLogout()
   }
 
   function navClass(path: string) {
@@ -81,7 +93,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
               <button
                 type="button"
-                onClick={handleLogout}
+                onClick={() => setShowLogoutDialog(true)}
                 className="btn btn-ghost btn-sm"
               >
                 Logout
@@ -101,6 +113,31 @@ export function AppLayout({ children }: AppLayoutProps) {
       </header>
 
       <main className="app-main">{children}</main>
+
+      {/* Logout confirmation dialog */}
+      {showLogoutDialog && (
+        <div className="modal-overlay" onClick={() => setShowLogoutDialog(false)}>
+          <div className="card" onClick={(e) => e.stopPropagation()} style={{
+            maxWidth: 420, width: '90%', padding: '2rem', textAlign: 'center',
+          }}>
+            <h3 className="heading-md mb-3">Logout</h3>
+            <p className="text-secondary text-sm mb-6">
+              Do you want to stay visible on your buddies' radar after logging out?
+            </p>
+            <div className="flex-col gap-sm">
+              <button className="btn btn-primary" onClick={handleLogoutStayVisible}>
+                Stay on Radar &amp; Logout
+              </button>
+              <button className="btn btn-danger" onClick={handleLogoutOffline}>
+                Go Offline &amp; Logout
+              </button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowLogoutDialog(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

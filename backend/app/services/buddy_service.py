@@ -33,14 +33,14 @@ def invite_buddy(
     if buddy.id == veteran_id:
         raise ValueError("Cannot invite yourself")
 
-    # Check both directions for existing links
+    # Check both directions for existing links (with row lock for concurrency safety)
     existing = db.execute(
         select(BuddyLink).where(
             or_(
                 (BuddyLink.veteran_id == veteran_id) & (BuddyLink.buddy_id == buddy.id),
                 (BuddyLink.veteran_id == buddy.id) & (BuddyLink.buddy_id == veteran_id),
             )
-        )
+        ).with_for_update()
     ).scalar_one_or_none()
 
     if existing:
@@ -90,6 +90,46 @@ def block_link(db: Session, link_id: int, user_id: int) -> BuddyLink:
     db.commit()
     db.refresh(link)
     return link
+
+
+def get_all_accepted_buddy_ids(db: Session, user_id: int) -> list[int]:
+    """Get ALL accepted buddy user IDs -- queries BOTH directions.
+
+    This is the canonical helper for any feature that needs a user's buddies
+    (nearby list, SOS recipients, map, etc.).
+    """
+    result = db.execute(
+        select(BuddyLink).where(
+            or_(BuddyLink.veteran_id == user_id, BuddyLink.buddy_id == user_id),
+            BuddyLink.status == "ACCEPTED",
+        )
+    )
+    links = list(result.scalars().all())
+    return [l.buddy_id if l.veteran_id == user_id else l.veteran_id for l in links]
+
+
+def withdraw_invite(db: Session, link_id: int, user_id: int) -> None:
+    """Sender withdraws their own PENDING invite. Only the sender (veteran_id) can withdraw."""
+    link = db.get(BuddyLink, link_id)
+    if not link:
+        raise ValueError("Link not found")
+    if link.veteran_id != user_id:
+        raise ValueError("Only the sender can withdraw an invite")
+    if link.status != "PENDING":
+        raise ValueError(f"Cannot withdraw a link with status {link.status}")
+    db.delete(link)
+    db.commit()
+
+
+def remove_link(db: Session, link_id: int, user_id: int) -> None:
+    """Remove (delete) a buddy link. Either veteran or buddy can remove."""
+    link = db.get(BuddyLink, link_id)
+    if not link:
+        raise ValueError("Link not found")
+    if link.veteran_id != user_id and link.buddy_id != user_id:
+        raise ValueError("Only veteran or buddy can remove this link")
+    db.delete(link)
+    db.commit()
 
 
 def get_buddy_links_for_veteran(db: Session, veteran_id: int) -> list[BuddyLink]:

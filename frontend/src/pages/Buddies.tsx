@@ -52,7 +52,15 @@ export default function Buddies() {
 
       <div className="animate-in animate-in-delay-2">
         <h2 className="heading-md mb-4">Buddy Links</h2>
-        <BuddyList links={links} onUpdated={load} />
+        <BuddyList
+          links={links}
+          onUpdated={(optimisticRemoveId) => {
+            if (optimisticRemoveId !== undefined) {
+              setLinks((prev) => prev.filter((l) => l.id !== optimisticRemoveId))
+            }
+            load()
+          }}
+        />
       </div>
     </div>
   )

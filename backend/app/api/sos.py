@@ -24,6 +24,7 @@ from app.services.sos_service import (
     close_sos,
     create_sos_from_checkin,
     create_sos_manual,
+    delete_sos,
     escalate_sos,
     get_incoming_alerts,
     get_sos,
@@ -84,6 +85,16 @@ def create_manual(
     current_user: User = Depends(require_veteran),
 ):
     """Create manual SOS. Only veterans. Creates 3-5 recipients from accepted buddies."""
+    # #region agent log
+    try:
+        from app.services.buddy_service import get_all_accepted_buddy_ids
+        all_ids = get_all_accepted_buddy_ids(db, current_user.id)
+        with open("/Users/sriramm/Cursor_Projects/.cursor/debug.log", "a") as f:
+            import json
+            f.write(json.dumps({"location":"sos.py:create_manual","message":"create_manual entry","data":{"veteran_id":current_user.id,"role":current_user.role,"buddy_ids":data.buddy_ids,"broadcast":data.broadcast,"all_accepted_ids":all_ids},"timestamp":__import__("time").time()*1000,"hypothesisId":"H2"}) + "\n")
+    except Exception:
+        pass
+    # #endregion
     try:
         alert = create_sos_manual(db, current_user.id, data.severity, data.buddy_ids, data.broadcast)
         enriched = _enrich_alert(alert, db)
@@ -152,6 +163,23 @@ def close_alert(
         if "not found" in str(e).lower():
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+
+
+@router.delete("/{sos_id}")
+def delete_alert(
+    sos_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete an SOS alert and its notifications. Only veteran owner can delete."""
+    try:
+        delete_sos(db, sos_id, current_user.id)
+        return {"status": "ok"}
+    except ValueError as e:
+        detail = str(e)
+        if "not found" in detail.lower():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
 
 
 @router.post("/{sos_id}/escalate", response_model=SosAlertResponse)

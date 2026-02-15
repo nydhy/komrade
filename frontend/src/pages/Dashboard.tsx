@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getMyCheckins, type MoodCheckin } from '../api/checkins'
-import { getMe, type UserMe } from '../api/auth'
+import { getMe } from '../api/auth'
 import { getBuddies, type BuddyLinkWithUser } from '../api/buddies'
 import { MoodCheckinCard } from '../components/MoodCheckinCard'
 import { MoodCheckinForm } from '../components/MoodCheckinForm'
@@ -54,6 +54,11 @@ export default function Dashboard() {
       name: l.other_name || l.other_email,
       email: l.other_email,
     }))
+  // #region agent log
+  if (buddyOptions.length > 0) {
+    fetch('http://127.0.0.1:7242/ingest/ea529403-4157-4bb2-8989-ab1b42396ecc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.tsx:buddyOptions',message:'buddyOptions built',data:{role,buddyOptions:buddyOptions.map(b=>({id:b.id,name:b.name})),rawLinks:buddyLinks.filter(l=>l.status==='ACCEPTED').map(l=>({veteran_id:l.veteran_id,buddy_id:l.buddy_id}))},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
+  }
+  // #endregion
 
   /* ── Loading skeleton ── */
   if (loading) {

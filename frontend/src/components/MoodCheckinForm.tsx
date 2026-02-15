@@ -51,6 +51,9 @@ export function MoodCheckinForm({ onSubmitted, buddies, onSosCreated }: MoodChec
     setError(null)
     setSuccess(null)
     setSubmitting(true)
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/ea529403-4157-4bb2-8989-ab1b42396ecc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MoodCheckinForm.tsx:handleSubmit',message:'handleSubmit entry',data:{sendSos,moodScore,broadcast,selectedBuddyIdsSize:selectedBuddyIds.size,selectedBuddyIds:Array.from(selectedBuddyIds)},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     try {
       const tags = tagsInput
         .split(/[,\s]+/)
@@ -62,7 +65,10 @@ export function MoodCheckinForm({ onSubmitted, buddies, onSosCreated }: MoodChec
         note: note.trim() || undefined,
         wants_company: wantsCompany,
       }
-      await createCheckin(data)
+      const checkin = await createCheckin(data)
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/ea529403-4157-4bb2-8989-ab1b42396ecc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MoodCheckinForm.tsx:createCheckin',message:'createCheckin success',data:{checkinId:checkin.id},timestamp:Date.now(),hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
 
       // If SOS is enabled, also send SOS
       if (sendSos) {
@@ -72,11 +78,20 @@ export function MoodCheckinForm({ onSubmitted, buddies, onSosCreated }: MoodChec
         } else if (selectedBuddyIds.size > 0) {
           sosOptions.buddy_ids = Array.from(selectedBuddyIds)
         }
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/ea529403-4157-4bb2-8989-ab1b42396ecc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MoodCheckinForm.tsx:createManualSos',message:'before createManualSos',data:{sosOptions:JSON.stringify(sosOptions),severity:sosSeverity},timestamp:Date.now(),hypothesisId:'H4'})}).catch(()=>{});
+        // #endregion
         try {
           const alert = await createManualSos(sosSeverity, sosOptions)
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/ea529403-4157-4bb2-8989-ab1b42396ecc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MoodCheckinForm.tsx:createManualSos',message:'createManualSos success',data:{alertId:alert.id},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+          // #endregion
           onSosCreated?.(alert)
           setSuccess(`Check-in submitted + SOS #${alert.id} sent!`)
         } catch (err) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/ea529403-4157-4bb2-8989-ab1b42396ecc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'MoodCheckinForm.tsx:createManualSos',message:'createManualSos FAILED',data:{error:String(err)},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+          // #endregion
           setSuccess('Check-in submitted.')
           setError(err instanceof Error ? err.message : 'Check-in OK but SOS failed')
         }

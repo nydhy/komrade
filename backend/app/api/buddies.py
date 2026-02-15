@@ -16,6 +16,8 @@ from app.services.buddy_service import (
     get_buddy_links_for_veteran,
     get_pending_invites_for_buddy,
     invite_buddy,
+    remove_link,
+    withdraw_invite,
 )
 
 router = APIRouter(prefix="/buddies", tags=["buddies"])
@@ -39,6 +41,7 @@ def _enrich_link(link, db: Session, current_user_id: int) -> BuddyLinkWithUser:
         other_latitude=other.latitude if other else None,
         other_longitude=other.longitude if other else None,
         other_presence_status=presence_status,
+        is_sender=(link.veteran_id == current_user_id),
     )
 
 
@@ -91,6 +94,34 @@ def block(
     try:
         link = block_link(db, link_id, current_user.id)
         return link
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/{link_id}/withdraw", response_model=dict)
+def withdraw(
+    link_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Sender withdraws a pending invite."""
+    try:
+        withdraw_invite(db, link_id, current_user.id)
+        return {"status": "ok"}
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.delete("/{link_id}")
+def remove(
+    link_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Remove a buddy link entirely. Either veteran or buddy can remove."""
+    try:
+        remove_link(db, link_id, current_user.id)
+        return {"status": "ok"}
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

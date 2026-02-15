@@ -2,7 +2,7 @@
  * SOS alerts API client.
  */
 
-import { get, post } from './http'
+import { del, get, post } from './http'
 import { getToken } from '../state/authStore'
 
 export interface SosRecipient {
@@ -83,6 +83,12 @@ export async function closeSos(sosId: number): Promise<SosAlert> {
   const token = getToken()
   if (!token) throw new Error('Not authenticated')
   return post<SosAlert>(`/sos/${sosId}/close`, {}, token)
+}
+
+export async function deleteSos(sosId: number): Promise<{ status: string }> {
+  const token = getToken()
+  if (!token) throw new Error('Not authenticated')
+  return del<{ status: string }>(`/sos/${sosId}`, token)
 }
 
 export async function getMySos(limit = 20): Promise<SosAlert[]> {

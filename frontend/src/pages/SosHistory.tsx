@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { closeSos, getMySos, type SosAlert } from '../api/sos'
+import { closeSos, deleteSos, getMySos, type SosAlert, type SosRecipient } from '../api/sos'
 import { useRealtime } from '../state/realtime'
 
 function severityClass(severity: string) {
@@ -9,6 +9,37 @@ function severityClass(severity: string) {
     case 'LOW': return 'severity-low'
     default: return ''
   }
+}
+
+function RecipientResponses({ recipients }: { recipients: SosRecipient[] }) {
+  return (
+    <div className="mt-3">
+      <span className="text-secondary text-sm">Recipients:</span>
+      <ul className="mt-1 flex-col gap-xs" style={{ listStyle: 'none', paddingLeft: 0 }}>
+        {recipients.map((r) => (
+          <li key={r.id} className="text-sm">
+            <span className="text-secondary">• {r.buddy_name}</span>
+            <span className="text-muted"> — {r.status}</span>
+            {(r.status === 'ACCEPTED' || r.status === 'DECLINED') ? (
+              <div className="text-muted text-xs mt-1" style={{ paddingLeft: '1rem' }}>
+                {r.message ? `"${r.message}"` : '(no message)'}
+                {r.status === 'ACCEPTED' && r.eta_minutes != null && (
+                  <> · ETA: {r.eta_minutes} min</>
+                )}
+                {r.responded_at && (
+                  <> · {new Date(r.responded_at).toLocaleString()}</>
+                )}
+              </div>
+            ) : (
+              <div className="text-muted text-xs mt-1" style={{ paddingLeft: '1rem' }}>
+                (no response yet)
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 export default function SosHistory() {
@@ -33,6 +64,14 @@ export default function SosHistory() {
     try {
       const updated = await closeSos(sosId)
       setAlerts((prev) => prev.map((a) => (a.id === sosId ? updated : a)))
+    } catch { /* ignore */ }
+  }
+
+  async function handleDelete(sosId: number) {
+    if (!confirm('Delete this SOS alert and all its notifications? This cannot be undone.')) return
+    try {
+      await deleteSos(sosId)
+      setAlerts((prev) => prev.filter((a) => a.id !== sosId))
     } catch { /* ignore */ }
   }
 
@@ -75,17 +114,24 @@ export default function SosHistory() {
                         </strong>
                         <span className="badge badge-danger">{alert.status}</span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleClose(alert.id)}
-                        className="btn btn-ghost btn-sm"
-                      >
-                        Close
-                      </button>
+                      <div className="flex-center gap-sm">
+                        <button
+                          type="button"
+                          onClick={() => handleClose(alert.id)}
+                          className="btn btn-ghost btn-sm"
+                        >
+                          Close
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(alert.id)}
+                          className="btn btn-danger btn-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-secondary text-sm mt-3">
-                      Recipients: {alert.recipients.map((r) => `${r.buddy_name} (${r.status})`).join(', ')}
-                    </p>
+                    <RecipientResponses recipients={alert.recipients} />
                     <p className="text-muted text-xs mt-1">
                       Created: {new Date(alert.created_at).toLocaleString()}
                     </p>
@@ -112,10 +158,15 @@ export default function SosHistory() {
                         </strong>
                         <span className="badge">{alert.status}</span>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(alert.id)}
+                        className="btn btn-danger btn-sm"
+                      >
+                        Delete
+                      </button>
                     </div>
-                    <p className="text-secondary text-sm mt-3">
-                      Recipients: {alert.recipients.map((r) => `${r.buddy_name} (${r.status})`).join(', ')}
-                    </p>
+                    <RecipientResponses recipients={alert.recipients} />
                     <p className="text-muted text-xs mt-1">
                       Created: {new Date(alert.created_at).toLocaleString()}
                       {alert.closed_at && ` · Closed: ${new Date(alert.closed_at).toLocaleString()}`}

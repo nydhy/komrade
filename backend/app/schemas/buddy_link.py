@@ -35,3 +35,4 @@ class BuddyLinkWithUser(BuddyLinkResponse):
     other_longitude: float | None = None
     other_location_label: str | None = None
     other_presence_status: str | None = None
+    is_sender: bool = False

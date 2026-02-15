@@ -4,7 +4,7 @@ import math
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.models.buddy_link import BuddyLink
@@ -57,10 +57,10 @@ def get_ranked_buddies(
     vet_lat = veteran.latitude if veteran else None
     vet_lng = veteran.longitude if veteran else None
 
-    # Get accepted buddy links
+    # Get accepted buddy links -- BOTH directions (sender or receiver)
     links_result = db.execute(
         select(BuddyLink).where(
-            BuddyLink.veteran_id == veteran_id,
+            or_(BuddyLink.veteran_id == veteran_id, BuddyLink.buddy_id == veteran_id),
             BuddyLink.status == "ACCEPTED",
         )
     )
@@ -68,8 +68,15 @@ def get_ranked_buddies(
     if not links:
         return []
 
-    buddy_ids = [l.buddy_id for l in links]
-    trust_map = {l.buddy_id: l.trust_level for l in links}
+    # Compute the "other" user id for each link
+    buddy_ids = [
+        l.buddy_id if l.veteran_id == veteran_id else l.veteran_id
+        for l in links
+    ]
+    trust_map = {
+        (l.buddy_id if l.veteran_id == veteran_id else l.veteran_id): l.trust_level
+        for l in links
+    }
 
     # Get buddy users
     users_result = db.execute(select(User).where(User.id.in_(buddy_ids)))
