@@ -1,1 +1,0 @@
-import{a as r,p as e,g as a,x as o}from"./index-D1iaHaPw.js";async function u(t){return e("/auth/login",t)}async function i(t){return e("/auth/register",t)}async function c(t){return r("/auth/me",t)}async function g(t){const n=a();if(!n)throw new Error("Not authenticated");return o("/auth/me",t,n)}export{c as g,u as l,i as r,g as u};
