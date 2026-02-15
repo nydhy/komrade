@@ -7,6 +7,12 @@ import {
   type TranslateResponse,
 } from '../api/translate'
 
+const SUGGESTED_PROMPTS = [
+  'I am feeling lonely',
+  'Why is everybody mean',
+  'I am disappointed with my life',
+]
+
 export default function Translation() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -145,6 +151,19 @@ export default function Translation() {
             placeholder="Type text to translate..."
             required
           />
+          <div className="flex-center gap-sm mt-3" style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}>
+            {SUGGESTED_PROMPTS.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setMessage(prompt)}
+                disabled={loading || transcribing}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex-center" style={{ gap: '0.75rem', justifyContent: 'flex-start' }}>
