@@ -13,3 +13,4 @@ apps/api/.venv/
 .env.local
 apps/api/.env
 apps/web/.env.local
+.venv
