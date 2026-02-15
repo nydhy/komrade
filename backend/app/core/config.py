@@ -22,5 +22,11 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7  # 7 days
 
+    # AI providers
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-1.5-flash"
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3.1"
+
 
 settings = Settings()
