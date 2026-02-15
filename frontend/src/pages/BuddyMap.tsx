@@ -247,7 +247,7 @@ export default function BuddyMap() {
       {/* Location warning */}
       {!hasUserLocation && (
         <div className="alert alert-danger animate-in animate-in-delay-2" style={{ marginBottom: '1rem' }}>
-          Your location is not set. Go to <a href="/profile" style={{ fontWeight: 600, color: 'inherit', textDecoration: 'underline' }}>Profile</a> to set it. Showing buddies only.
+          Your location is not set. Go to <a href="/" style={{ fontWeight: 600, color: 'inherit', textDecoration: 'underline' }}>Dashboard</a> to set it. Showing buddies only.
         </div>
       )}
 
