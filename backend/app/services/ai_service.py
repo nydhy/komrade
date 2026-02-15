@@ -111,8 +111,10 @@ def _parse_provider_output(raw: str | dict[str, Any]) -> dict[str, Any]:
     if not isinstance(raw, str):
         raise ValueError(f"Provider returned non-string/non-object output: {type(raw).__name__}")
 
+    normalized = _strip_code_fences(raw)
+
     try:
-        parsed = json.loads(raw)
+        parsed = json.loads(normalized)
     except json.JSONDecodeError as exc:
         raise ValueError(f"Invalid JSON: {exc.msg}") from exc
 
@@ -120,6 +122,19 @@ def _parse_provider_output(raw: str | dict[str, Any]) -> dict[str, Any]:
         raise ValueError("JSON must be an object")
 
     return parsed
+
+
+def _strip_code_fences(text: str) -> str:
+    """Normalize fenced markdown JSON to plain JSON text."""
+    stripped = text.strip()
+    if not stripped.startswith("```"):
+        return stripped
+
+    lines = stripped.splitlines()
+    if len(lines) >= 2 and lines[0].startswith("```") and lines[-1].strip() == "```":
+        return "\n".join(lines[1:-1]).strip()
+
+    return stripped
 
 
 def _build_prompt(task: str, payload: dict[str, Any], schema: dict[str, Any]) -> str:

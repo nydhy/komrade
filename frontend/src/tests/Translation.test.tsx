@@ -8,16 +8,14 @@ vi.mock('../api/translate', () => ({
     {
       created_at: '2026-01-01T00:00:00Z',
       user_id: 1,
-      provider: 'ollama',
-      message: 'history item',
+      question: 'history question',
+      response: 'history response',
       context: null,
-      generic_answer: 'history generic',
-      empathetic_personalized_answer: 'history empathetic',
+      empathetic_personalized_answer: 'history response',
       safety_flag: 'normal',
     },
   ]),
   translateText: vi.fn().mockResolvedValue({
-    generic_answer: 'generic output',
     empathetic_personalized_answer: 'empathetic output',
     safety_flag: 'normal',
   }),
@@ -31,8 +29,8 @@ describe('Translation page', () => {
       </BrowserRouter>,
     )
 
-    await screen.findByRole('heading', { name: /translation layer/i })
-    expect(await screen.findByText(/history item/i)).toBeInTheDocument()
+    await screen.findByRole('heading', { name: /chat with komradeai/i })
+    expect(await screen.findByText(/history question/i)).toBeInTheDocument()
   })
 
   it('loads outputs when clicking a history item', async () => {
@@ -42,10 +40,10 @@ describe('Translation page', () => {
       </BrowserRouter>,
     )
 
-    const historyButton = await screen.findByRole('button', { name: /history item/i })
+    const historyButton = await screen.findByRole('button', { name: /history question/i })
     fireEvent.click(historyButton)
 
-    expect(await screen.findByText(/history generic/i)).toBeInTheDocument()
-    expect(await screen.findByText(/history empathetic/i)).toBeInTheDocument()
+    const matches = await screen.findAllByText(/history response/i)
+    expect(matches.length).toBeGreaterThan(0)
   })
 })

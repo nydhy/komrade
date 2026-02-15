@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react'
+import { getMe } from '../api/auth'
 import {
   getTranslateHistory,
   translateText,
   type TranslateHistoryItem,
-  type TranslateProvider,
   type TranslateResponse,
 } from '../api/translate'
+import { getToken } from '../state/authStore'
 
 export default function Translation() {
-  const [provider, setProvider] = useState<TranslateProvider>('ollama')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<TranslateResponse | null>(null)
   const [history, setHistory] = useState<TranslateHistoryItem[]>([])
+  const [userDisplayName, setUserDisplayName] = useState('You')
 
   async function loadHistory() {
     try {
@@ -28,12 +29,33 @@ export default function Translation() {
     loadHistory()
   }, [])
 
+  useEffect(() => {
+    async function loadUser() {
+      let token: string | null = null
+      try {
+        token = getToken()
+      } catch {
+        return
+      }
+      if (!token) return
+      try {
+        const me = await getMe(token)
+        if (me.full_name?.trim()) {
+          setUserDisplayName(me.full_name.trim())
+        }
+      } catch {
+        // keep default label
+      }
+    }
+    loadUser()
+  }, [])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
     try {
-      const data = await translateText({ provider, message })
+      const data = await translateText({ message })
       setResult(data)
       await loadHistory()
     } catch (err) {
@@ -44,11 +66,9 @@ export default function Translation() {
   }
 
   function loadFromHistory(item: TranslateHistoryItem) {
-    setMessage(item.message)
-    setProvider(item.provider === 'gemini' ? 'gemini' : 'ollama')
+    setMessage(item.question)
     setResult({
-      generic_answer: item.generic_answer,
-      empathetic_personalized_answer: item.empathetic_personalized_answer,
+      empathetic_personalized_answer: item.response,
       safety_flag: item.safety_flag,
     })
   }
@@ -56,8 +76,9 @@ export default function Translation() {
   return (
     <div className="page-container">
       <div className="page-header animate-in">
-        <h1 className="heading-lg">Translation Layer</h1>
-        <p className="text-secondary mt-2">Turn messages into generic + empathetic responses.</p>
+        <h1 className="heading-lg">
+          Chat with <span className="text-gradient">komradeAI</span>
+        </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="card animate-in animate-in-delay-1" style={{ marginBottom: '1rem' }}>
@@ -73,39 +94,16 @@ export default function Translation() {
           />
         </div>
 
-        <div className="flex-center gap-sm" style={{ marginBottom: '1rem' }}>
-          <button
-            type="button"
-            className={`btn btn-sm ${provider === 'ollama' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setProvider('ollama')}
-          >
-            Ollama
-          </button>
-          <button
-            type="button"
-            className={`btn btn-sm ${provider === 'gemini' ? 'btn-primary' : 'btn-ghost'}`}
-            onClick={() => setProvider('gemini')}
-          >
-            Gemini
-          </button>
-        </div>
-
         <button className="btn btn-primary" type="submit" disabled={loading || !message.trim()}>
-          {loading ? 'Translating...' : 'Translate'}
+          {loading ? 'Translating...' : 'Tell me!'}
         </button>
 
         {error && <p className="text-danger mt-3">{error}</p>}
       </form>
 
-      <div className="grid-2" style={{ marginBottom: '1rem' }}>
-        <div className="card animate-in animate-in-delay-2">
-          <h2 className="heading-sm mb-2">Generic Answer</h2>
-          <p className="text-secondary">{result?.generic_answer ?? 'No output yet.'}</p>
-        </div>
-        <div className="card animate-in animate-in-delay-2">
-          <h2 className="heading-sm mb-2">Empathetic Personalized Answer</h2>
-          <p className="text-secondary">{result?.empathetic_personalized_answer ?? 'No output yet.'}</p>
-        </div>
+      <div className="card animate-in animate-in-delay-2" style={{ marginBottom: '1rem' }}>
+        <h2 className="heading-sm mb-2">Empathetic Personalized Answer</h2>
+        <p className="text-secondary">{result?.empathetic_personalized_answer ?? 'No output yet.'}</p>
       </div>
 
       <div className="card animate-in animate-in-delay-3">
@@ -122,10 +120,13 @@ export default function Translation() {
                 style={{ textAlign: 'left', justifyContent: 'space-between' }}
                 onClick={() => loadFromHistory(item)}
               >
-                <span>{item.message}</span>
-                <span className="text-muted text-xs">
-                  {new Date(item.created_at).toLocaleString()} · {item.provider} · {item.safety_flag}
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                  <span><strong>{userDisplayName}:</strong> {item.question}</span>
+                  <span className="text-secondary text-sm"><strong>komradeAI:</strong> {item.response}</span>
+                  <span className="text-muted text-xs">
+                    {new Date(item.created_at).toLocaleString()} · {item.safety_flag}
+                  </span>
+                </div>
               </button>
             ))}
           </div>

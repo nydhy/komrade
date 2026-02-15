@@ -5,16 +5,12 @@
 import { get, post } from './http'
 import { getToken } from '../state/authStore'
 
-export type TranslateProvider = 'gemini' | 'ollama'
-
 export interface TranslateRequest {
-  provider: TranslateProvider
   message: string
   context?: Record<string, unknown>
 }
 
 export interface TranslateResponse {
-  generic_answer: string
   empathetic_personalized_answer: string
   safety_flag: string
 }
@@ -22,8 +18,8 @@ export interface TranslateResponse {
 export interface TranslateHistoryItem extends TranslateResponse {
   created_at: string
   user_id: number
-  provider: string
-  message: string
+  question: string
+  response: string
   context?: Record<string, unknown> | null
 }
 

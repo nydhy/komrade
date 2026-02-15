@@ -83,6 +83,26 @@ def test_generate_structured_raises_after_retry_exhausted(monkeypatch):
     assert "failed to return valid structured json" in str(exc.value).lower()
 
 
+def test_generate_structured_accepts_markdown_fenced_json(monkeypatch):
+    """Provider JSON wrapped in markdown fences should still parse."""
+
+    def fake_call_provider(provider, prompt, schema):
+        return """```json
+{"summary":"ok","confidence":0.88}
+```"""
+
+    monkeypatch.setattr(ai_service, "_call_provider", fake_call_provider)
+
+    out = generate_structured(
+        provider="ollama",
+        task="test task",
+        payload={"x": 1},
+        schema=TEST_SCHEMA,
+    )
+
+    assert out == {"summary": "ok", "confidence": 0.88}
+
+
 def test_ai_test_router_returns_422_when_service_fails(client, monkeypatch):
     """Router should map AI service errors to HTTP 422."""
     from app.routers import ai_test

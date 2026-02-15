@@ -59,20 +59,19 @@ def test_translate_calls_ai_and_inserts_doc(client, monkeypatch):
 
     def fake_generate_structured(provider, task, payload, schema):
         return {
-            "generic_answer": "Generic supportive answer",
             "empathetic_personalized_answer": "Personalized empathetic answer",
             "safety_flag": "normal",
         }
 
     monkeypatch.setattr(translate, "generate_structured", fake_generate_structured)
     monkeypatch.setattr(translate, "get_translations_collection", lambda: fake_collection)
+    monkeypatch.setattr(translate.settings, "ai_provider", "ollama")
 
     headers = _auth_header(client)
     response = client.post(
         "/translate",
         headers=headers,
         json={
-            "provider": "ollama",
             "message": "Can you rewrite this kindly?",
             "context": {"tone": "supportive"},
         },
@@ -80,14 +79,14 @@ def test_translate_calls_ai_and_inserts_doc(client, monkeypatch):
 
     assert response.status_code == 200
     body = response.json()
-    assert body["generic_answer"] == "Generic supportive answer"
     assert body["empathetic_personalized_answer"] == "Personalized empathetic answer"
     assert body["safety_flag"] == "normal"
 
     assert len(fake_collection.inserted) == 1
     saved = fake_collection.inserted[0]
     assert saved["provider"] == "ollama"
-    assert saved["message"] == "Can you rewrite this kindly?"
+    assert saved["question"] == "Can you rewrite this kindly?"
+    assert saved["response"] == "Personalized empathetic answer"
     assert saved["context"] == {"tone": "supportive"}
     assert saved["safety_flag"] == "normal"
 
@@ -102,13 +101,13 @@ def test_translate_crisis_fallback_and_insert(client, monkeypatch):
 
     monkeypatch.setattr(translate, "generate_structured", fail_if_called)
     monkeypatch.setattr(translate, "get_translations_collection", lambda: fake_collection)
+    monkeypatch.setattr(translate.settings, "ai_provider", "ollama")
 
     headers = _auth_header(client, email="crisis@test.com")
     response = client.post(
         "/translate",
         headers=headers,
         json={
-            "provider": "ollama",
             "message": "I want to kill myself",
             "context": {"source": "chat"},
         },
@@ -140,9 +139,9 @@ def test_translate_history_returns_newest_first(client, monkeypatch):
             "created_at": now - timedelta(minutes=10),
             "user_id": my_user_id,
             "provider": "ollama",
-            "message": "old",
+            "question": "old",
+            "response": "old-e",
             "context": None,
-            "generic_answer": "old-g",
             "empathetic_personalized_answer": "old-e",
             "safety_flag": "normal",
         },
@@ -151,9 +150,9 @@ def test_translate_history_returns_newest_first(client, monkeypatch):
             "created_at": now,
             "user_id": my_user_id,
             "provider": "ollama",
-            "message": "new",
+            "question": "new",
+            "response": "new-e",
             "context": None,
-            "generic_answer": "new-g",
             "empathetic_personalized_answer": "new-e",
             "safety_flag": "normal",
         },
@@ -162,9 +161,9 @@ def test_translate_history_returns_newest_first(client, monkeypatch):
             "created_at": now + timedelta(minutes=1),
             "user_id": 9999,
             "provider": "ollama",
-            "message": "other-user",
+            "question": "other-user",
+            "response": "y",
             "context": None,
-            "generic_answer": "x",
             "empathetic_personalized_answer": "y",
             "safety_flag": "normal",
         },
@@ -175,6 +174,8 @@ def test_translate_history_returns_newest_first(client, monkeypatch):
     assert response.status_code == 200
     body = response.json()
     assert len(body) == 2
-    assert body[0]["message"] == "new"
-    assert body[1]["message"] == "old"
+    assert body[0]["question"] == "new"
+    assert body[0]["response"] == "new-e"
+    assert body[1]["question"] == "old"
+    assert body[1]["response"] == "old-e"
     assert all(item["user_id"] == my_user_id for item in body)

@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-1.5-flash"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1"
+    ai_provider: str = "ollama"
 
     # MongoDB
     mongo_uri: str = "mongodb://localhost:27017"
