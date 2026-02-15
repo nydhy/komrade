@@ -15,11 +15,11 @@ interface MoodCheckinFormProps {
 }
 
 const MOOD_OPTIONS = [
-  { value: 1, label: '1 - Very low' },
-  { value: 2, label: '2 - Low' },
-  { value: 3, label: '3 - Okay' },
-  { value: 4, label: '4 - Good' },
-  { value: 5, label: '5 - Great' },
+  { value: 1, emoji: '😞', label: 'Very low' },
+  { value: 2, emoji: '😕', label: 'Low' },
+  { value: 3, emoji: '😐', label: 'Okay' },
+  { value: 4, emoji: '🙂', label: 'Good' },
+  { value: 5, emoji: '😄', label: 'Great' },
 ]
 
 export function MoodCheckinForm({ onSubmitted, buddies, onSosCreated }: MoodCheckinFormProps) {
@@ -116,20 +116,27 @@ export function MoodCheckinForm({ onSubmitted, buddies, onSosCreated }: MoodChec
       )}
 
       <div className="flex-col gap-md">
-        {/* Mood select */}
+        {/* Mood select (emoji picker) */}
         <div className="input-group">
           <label>Mood (1-5)</label>
-          <select
-            className="select"
-            value={moodScore}
-            onChange={(e) => setMoodScore(Number(e.target.value))}
-          >
+          <div className="flex-center gap-sm" style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}>
             {MOOD_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
+              <button
+                key={opt.value}
+                type="button"
+                className={`btn btn-sm ${moodScore === opt.value ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setMoodScore(opt.value)}
+                aria-label={`Mood ${opt.value}: ${opt.label}`}
+                title={`${opt.label} (${opt.value})`}
+                style={{ minWidth: 58 }}
+              >
+                <span style={{ fontSize: '1rem', lineHeight: 1 }}>{opt.emoji}</span>
+              </button>
             ))}
-          </select>
+          </div>
+          <span className="text-secondary text-sm" style={{ marginTop: '0.4rem' }}>
+            Selected: {MOOD_OPTIONS.find((o) => o.value === moodScore)?.label} ({moodScore})
+          </span>
         </div>
 
         {/* Tags */}
