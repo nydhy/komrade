@@ -58,6 +58,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                 Map
               </Link>
 
+              <Link to="/translate" className={navClass('/translate')}>
+                Translate
+              </Link>
+
               <span className="nav-badge-wrapper">
                 <Link to="/inbox" className={navClass('/inbox')}>
                   Inbox
