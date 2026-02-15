@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import Translation from '../pages/Translation'
 
@@ -19,6 +19,7 @@ vi.mock('../api/translate', () => ({
     empathetic_personalized_answer: 'empathetic output',
     safety_flag: 'normal',
   }),
+  transcribeAudio: vi.fn().mockResolvedValue('voice transcript'),
 }))
 
 describe('Translation page', () => {
@@ -45,5 +46,57 @@ describe('Translation page', () => {
 
     const matches = await screen.findAllByText(/history response/i)
     expect(matches.length).toBeGreaterThan(0)
+  })
+
+  it('fills message from microphone transcript', async () => {
+    const trackStop = vi.fn()
+    const mediaStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream
+
+    Object.defineProperty(navigator, 'mediaDevices', {
+      value: {
+        getUserMedia: vi.fn().mockResolvedValue(mediaStream),
+      },
+      configurable: true,
+    })
+
+    class MockMediaRecorder {
+      ondataavailable: ((event: BlobEvent) => void) | null = null
+      onstop: (() => void) | null = null
+      state: RecordingState = 'inactive'
+
+      constructor(_stream: MediaStream) {}
+
+      start() {
+        this.state = 'recording'
+      }
+
+      stop() {
+        this.state = 'inactive'
+        this.ondataavailable?.({
+          data: new Blob(['audio'], { type: 'audio/webm' }),
+        } as BlobEvent)
+        this.onstop?.()
+      }
+    }
+
+    vi.stubGlobal('MediaRecorder', MockMediaRecorder)
+
+    render(
+      <BrowserRouter>
+        <Translation />
+      </BrowserRouter>,
+    )
+
+    const startButton = await screen.findByRole('button', { name: /start recording/i })
+    fireEvent.click(startButton)
+
+    const stopButton = await screen.findByRole('button', { name: /stop recording/i })
+    fireEvent.click(stopButton)
+
+    const textarea = screen.getByPlaceholderText(/type text to translate/i) as HTMLTextAreaElement
+    await waitFor(() => expect(textarea.value).toContain('voice transcript'))
+    expect(trackStop).toHaveBeenCalled()
   })
 })

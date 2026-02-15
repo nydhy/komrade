@@ -15,6 +15,7 @@ export default defineConfig({
       '/location': { target: 'http://localhost:8000', changeOrigin: true },
       '/settings': { target: 'http://localhost:8000', changeOrigin: true },
       '/translate': { target: 'http://localhost:8000', changeOrigin: true },
+      '/stt': { target: 'http://localhost:8000', changeOrigin: true },
       '/report': { target: 'http://localhost:8000', changeOrigin: true },
       '/health': { target: 'http://localhost:8000', changeOrigin: true },
       '/ws': { target: 'ws://localhost:8000', ws: true },

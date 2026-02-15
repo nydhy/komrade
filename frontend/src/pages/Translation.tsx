@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getMe } from '../api/auth'
 import {
   getTranslateHistory,
+  transcribeAudio,
   translateText,
   type TranslateHistoryItem,
   type TranslateResponse,
@@ -15,6 +16,11 @@ export default function Translation() {
   const [result, setResult] = useState<TranslateResponse | null>(null)
   const [history, setHistory] = useState<TranslateHistoryItem[]>([])
   const [userDisplayName, setUserDisplayName] = useState('You')
+  const [recording, setRecording] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const chunksRef = useRef<Blob[]>([])
 
   async function loadHistory() {
     try {
@@ -65,6 +71,70 @@ export default function Translation() {
     }
   }
 
+  async function startRecording() {
+    setError(null)
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('Microphone is not supported in this browser.')
+      return
+    }
+    if (typeof MediaRecorder === 'undefined') {
+      setError('Audio recording is not supported in this browser.')
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      streamRef.current = stream
+      mediaRecorderRef.current = recorder
+      chunksRef.current = []
+
+      recorder.ondataavailable = (event: BlobEvent) => {
+        if (event.data.size > 0) chunksRef.current.push(event.data)
+      }
+
+      recorder.onstop = async () => {
+        setRecording(false)
+        const streamValue = streamRef.current
+        if (streamValue) {
+          streamValue.getTracks().forEach((track) => track.stop())
+          streamRef.current = null
+        }
+
+        if (chunksRef.current.length === 0) return
+        const blobType = chunksRef.current[0]?.type || 'audio/webm'
+        const blob = new Blob(chunksRef.current, { type: blobType })
+        const extension = blobType.includes('wav') ? 'wav' : 'webm'
+        const file = new File([blob], `recording.${extension}`, { type: blobType })
+
+        setTranscribing(true)
+        try {
+          const transcript = await transcribeAudio(file)
+          setMessage((prev) => (prev.trim() ? `${prev.trim()} ${transcript}` : transcript))
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Speech-to-text failed')
+        } finally {
+          setTranscribing(false)
+          chunksRef.current = []
+        }
+      }
+
+      recorder.start()
+      setRecording(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not access microphone')
+    }
+  }
+
+  function stopRecording() {
+    const recorder = mediaRecorderRef.current
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.stop()
+    } else {
+      setRecording(false)
+    }
+  }
+
   function loadFromHistory(item: TranslateHistoryItem) {
     setMessage(item.question)
     setResult({
@@ -94,9 +164,20 @@ export default function Translation() {
           />
         </div>
 
-        <button className="btn btn-primary" type="submit" disabled={loading || !message.trim()}>
-          {loading ? 'Translating...' : 'Tell me!'}
-        </button>
+        <div className="flex-center" style={{ gap: '0.75rem', justifyContent: 'flex-start' }}>
+          <button
+            className={`btn ${recording ? 'btn-danger' : 'btn-secondary'}`}
+            type="button"
+            onClick={recording ? stopRecording : startRecording}
+            disabled={transcribing || loading}
+          >
+            {recording ? 'Stop recording' : transcribing ? 'Transcribing...' : 'Start recording'}
+          </button>
+
+          <button className="btn btn-primary" type="submit" disabled={loading || transcribing || !message.trim()}>
+            {loading ? 'Translating...' : 'Tell me!'}
+          </button>
+        </div>
 
         {error && <p className="text-danger mt-3">{error}</p>}
       </form>
