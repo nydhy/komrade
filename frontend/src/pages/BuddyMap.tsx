@@ -172,7 +172,7 @@ export default function BuddyMap() {
   if (loading) {
     return (
       <div className="page-container animate-in" style={{ textAlign: 'center' }}>
-        <h1 className="heading-lg text-gradient">Buddy Map</h1>
+        <h1 className="heading-lg text-gradient">Find my Komrade</h1>
         <p className="text-muted">Loading map...</p>
       </div>
     )
@@ -193,7 +193,7 @@ export default function BuddyMap() {
     <div className="page-container animate-in">
       {/* Header + legend */}
       <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
-        <h1 className="heading-lg text-gradient" style={{ margin: 0 }}>Buddy Map</h1>
+        <h1 className="heading-lg text-gradient" style={{ margin: 0 }}>Find my Komrade</h1>
         <div className="gap-md" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.85rem' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#6366f1', display: 'inline-block', boxShadow: '0 0 6px rgba(99,102,241,0.5)' }} />
@@ -247,7 +247,7 @@ export default function BuddyMap() {
       {/* Location warning */}
       {!hasUserLocation && (
         <div className="alert alert-danger animate-in animate-in-delay-2" style={{ marginBottom: '1rem' }}>
-          Your location is not set. Go to <a href="/" style={{ fontWeight: 600, color: 'inherit', textDecoration: 'underline' }}>Dashboard</a> to set it. Showing buddies only.
+          Your location is not set. Go to <a href="/" style={{ fontWeight: 600, color: 'inherit', textDecoration: 'underline' }}>Dashboard</a> to set it. Showing komrades only.
         </div>
       )}
 
@@ -319,7 +319,7 @@ export default function BuddyMap() {
       {buddies.length > 0 && (
         <div className="animate-in animate-in-delay-3" style={{ marginTop: '1.5rem' }}>
           <h3 className="heading-sm" style={{ marginBottom: '0.75rem' }}>
-            Buddies
+            Komrades
             <span className="badge badge-info" style={{ marginLeft: '0.5rem' }}>{buddies.length}</span>
           </h3>
           <table className="table">

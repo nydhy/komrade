@@ -21,7 +21,7 @@ describe('Buddies', () => {
         <Buddies />
       </BrowserRouter>,
     )
-    await screen.findByRole('heading', { name: /my buddies/i })
-    expect(screen.getByRole('heading', { name: /buddy links/i })).toBeInTheDocument()
+    await screen.findByRole('heading', { name: /my komrades/i })
+    expect(screen.getByRole('heading', { name: /komrade links/i })).toBeInTheDocument()
   })
 })

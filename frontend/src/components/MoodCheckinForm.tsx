@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createCheckin, type MoodCheckinCreate } from '../api/checkins'
-import { createManualSos, type SosCreateOptions } from '../api/sos'
+import { createSosFromCheckin, type SosCreateOptions } from '../api/sos'
 
 interface BuddyOption {
   id: number
@@ -62,7 +62,7 @@ export function MoodCheckinForm({ onSubmitted, buddies, onSosCreated }: MoodChec
         note: note.trim() || undefined,
         wants_company: wantsCompany,
       }
-      await createCheckin(data)
+      const checkin = await createCheckin(data)
 
       // If SOS is enabled, also send SOS
       if (sendSos) {
@@ -73,7 +73,11 @@ export function MoodCheckinForm({ onSubmitted, buddies, onSosCreated }: MoodChec
           sosOptions.buddy_ids = Array.from(selectedBuddyIds)
         }
         try {
-          const alert = await createManualSos(sosSeverity, sosOptions)
+          const alert = await createSosFromCheckin(checkin.id, {
+            severity: sosSeverity,
+            buddy_ids: sosOptions.buddy_ids,
+            broadcast: sosOptions.broadcast,
+          })
           onSosCreated?.(alert)
           setSuccess(`Check-in submitted + SOS #${alert.id} sent!`)
         } catch (err) {
