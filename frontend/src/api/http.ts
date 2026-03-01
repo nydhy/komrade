@@ -11,7 +11,7 @@ export interface ApiError {
 export async function get<T>(path: string, token?: string): Promise<T> {
   const headers: Record<string, string> = {}
   if (token) headers['Authorization'] = `Bearer ${token}`
-  const res = await fetch(`${API_BASE}${path}`, { headers })
+  const res = await fetch(`${API_BASE}${path}`, { headers, cache: 'no-store' })
   if (!res.ok) {
     const err: ApiError = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail))

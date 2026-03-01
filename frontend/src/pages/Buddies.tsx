@@ -33,7 +33,7 @@ export default function Buddies() {
       <div className="page-container flex-center" style={{ minHeight: '60vh' }}>
         <div className="card flex-center gap-md animate-in">
           <div className="animate-spin" style={{ width: 24, height: 24, border: '3px solid var(--border-default)', borderTopColor: 'var(--accent-primary)', borderRadius: '50%' }} />
-          <span className="text-secondary">Loading buddies…</span>
+          <span className="text-secondary">Loading komrades…</span>
         </div>
       </div>
     )
@@ -42,7 +42,7 @@ export default function Buddies() {
   return (
     <div className="page-container page-container-narrow">
       <div className="animate-in mb-8">
-        <h1 className="heading-lg mb-2">My Buddies</h1>
+        <h1 className="heading-lg mb-2">My Komrades</h1>
         <p className="text-secondary">Manage your connections and friend requests</p>
       </div>
 
@@ -51,7 +51,7 @@ export default function Buddies() {
       </div>
 
       <div className="animate-in animate-in-delay-2">
-        <h2 className="heading-md mb-4">Buddy Links</h2>
+        <h2 className="heading-md mb-4">Komrade Links</h2>
         <BuddyList links={links} onUpdated={load} />
       </div>
     </div>

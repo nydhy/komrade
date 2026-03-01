@@ -42,7 +42,7 @@ Local-first prototype with:
 - Auth pages and protected app shell
 - Dashboard, buddies, map, SOS history, profile, settings
 - Chat page (`/translate`) labeled as **Chat**
-- Chat response mode focused on empathetic personalized answer
+- Chat response mode focused on personalized answer
 - History panel with user label + `komradeAI` response
 - Optional microphone recording:
   - record audio in browser

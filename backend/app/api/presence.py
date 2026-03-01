@@ -80,6 +80,7 @@ def update_location(
     current_user.latitude = data.latitude
     current_user.longitude = data.longitude
     db.commit()
+    db.refresh(current_user)
     return {"status": "ok", "latitude": data.latitude, "longitude": data.longitude}
 
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   generateJourneyChallenges,
   getJourneyChallengeInsights,
@@ -112,6 +112,7 @@ export default function Journey() {
   const [challenges, setChallenges] = useState<JourneyChallenge[]>([])
   const [activeChallengeId, setActiveChallengeId] = useState<number | null>(null)
   const [xp, setXp] = useState(0)
+  const [displayXp, setDisplayXp] = useState(0)
   const [level, setLevel] = useState(1)
   const [streak, setStreak] = useState(0)
 
@@ -129,6 +130,15 @@ export default function Journey() {
 
   const [toastMessage, setToastMessage] = useState('Marked for practice')
   const [toastVisible, setToastVisible] = useState(false)
+  const [unlockFxChallengeId, setUnlockFxChallengeId] = useState<number | null>(null)
+  const [completedFxChallengeId, setCompletedFxChallengeId] = useState<number | null>(null)
+  const [showSuccessFx, setShowSuccessFx] = useState(false)
+
+  const xpAnimationFrameRef = useRef<number | null>(null)
+  const xpInitializedRef = useRef(false)
+  const previousXpRef = useRef(0)
+  const currentChallengeRef = useRef<number | null>(null)
+  const currentChallengeInitRef = useRef(false)
 
   const completedChallenges = useMemo(
     () => challenges.filter((c) => c.is_completed).sort((a, b) => a.sort_order - b.sort_order),
@@ -164,7 +174,7 @@ export default function Journey() {
     const xpInLevel = xp - (Math.max(1, level) - 1) * 100
     return Math.max(0, Math.min(100, xpInLevel))
   }, [xp, level])
-  const xpInLevel = useMemo(() => xp - (Math.max(1, level) - 1) * 100, [xp, level])
+  const xpInLevel = useMemo(() => displayXp - (Math.max(1, level) - 1) * 100, [displayXp, level])
 
   const nextChallengeNumber = useMemo(() => {
     if (!currentChallenge) return completedChallenges.length + 1
@@ -215,6 +225,63 @@ export default function Journey() {
     }
     return items.slice(0, 2)
   }, [visibleLocked, orderedChallenges.length])
+
+  useEffect(() => {
+    const currentId = visibleCurrent?.id ?? null
+    if (!currentChallengeInitRef.current) {
+      currentChallengeInitRef.current = true
+      currentChallengeRef.current = currentId
+      return
+    }
+    if (currentId && currentChallengeRef.current !== currentId) {
+      setUnlockFxChallengeId(currentId)
+      const timer = window.setTimeout(() => setUnlockFxChallengeId(null), 900)
+      currentChallengeRef.current = currentId
+      return () => window.clearTimeout(timer)
+    }
+    currentChallengeRef.current = currentId
+  }, [visibleCurrent?.id])
+
+  useEffect(() => {
+    const nextXp = xp
+    if (!xpInitializedRef.current) {
+      xpInitializedRef.current = true
+      previousXpRef.current = nextXp
+      setDisplayXp(nextXp)
+      return
+    }
+
+    const startXp = previousXpRef.current
+    previousXpRef.current = nextXp
+    if (startXp === nextXp) {
+      setDisplayXp(nextXp)
+      return
+    }
+
+    if (xpAnimationFrameRef.current) {
+      window.cancelAnimationFrame(xpAnimationFrameRef.current)
+    }
+    const duration = 700
+    const startAt = performance.now()
+
+    const step = (now: number) => {
+      const elapsed = Math.min(1, (now - startAt) / duration)
+      const eased = 1 - (1 - elapsed) * (1 - elapsed)
+      const value = Math.round(startXp + (nextXp - startXp) * eased)
+      setDisplayXp(value)
+      if (elapsed < 1) {
+        xpAnimationFrameRef.current = window.requestAnimationFrame(step)
+      }
+    }
+
+    xpAnimationFrameRef.current = window.requestAnimationFrame(step)
+
+    return () => {
+      if (xpAnimationFrameRef.current) {
+        window.cancelAnimationFrame(xpAnimationFrameRef.current)
+      }
+    }
+  }, [xp])
 
   useEffect(() => {
     let mounted = true
@@ -295,6 +362,7 @@ export default function Journey() {
 
   async function saveCompletion() {
     if (!currentChallenge) return
+    const completedChallengeId = currentChallenge.id
     setSaving(true)
     setError(null)
     try {
@@ -310,6 +378,12 @@ export default function Journey() {
       const data = await saveJourneyProgress(payload)
       hydrate(data)
       setShowCompletionModal(false)
+      if (completed) {
+        setCompletedFxChallengeId(completedChallengeId)
+        setShowSuccessFx(true)
+        window.setTimeout(() => setShowSuccessFx(false), 1000)
+        window.setTimeout(() => setCompletedFxChallengeId(null), 1300)
+      }
       showToast('Progress saved')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save progress')
@@ -360,6 +434,16 @@ export default function Journey() {
 
   return (
     <div className="journey-k1">
+      {showSuccessFx && (
+        <div className="journey-success-fx" aria-hidden>
+          <span className="journey-success-dot dot-1" />
+          <span className="journey-success-dot dot-2" />
+          <span className="journey-success-dot dot-3" />
+          <span className="journey-success-dot dot-4" />
+          <span className="journey-success-dot dot-5" />
+          <span className="journey-success-dot dot-6" />
+        </div>
+      )}
       <div className={`toast ${toastVisible ? 'show' : ''}`}>
         <span className="toast-icon">✓</span>
         <span className="toast-text">{toastMessage}</span>
@@ -538,10 +622,21 @@ export default function Journey() {
 
       <div className={`screen ${screen === 'loading' ? 'active' : ''}`}>
         <div className="container">
-          <div className="loading-content">
-            <div className="loading-spinner" />
-            <div className="loading-text">Creating your personalized journey...</div>
-            <div className="loading-subtext">Building challenges tailored to your pace and goals</div>
+          <div className="journey-loading-stage" aria-live="polite" role="status">
+            <div className="journey-loading-orb journey-loading-orb-a" />
+            <div className="journey-loading-orb journey-loading-orb-b" />
+
+            <div className="loading-content">
+              <div className="loading-spinner-wrap">
+                <div className="loading-spinner" />
+                <div className="loading-spinner-core" />
+              </div>
+              <div className="loading-text">Creating your personalized journey...</div>
+              <div className="loading-subtext">Building challenges tailored to your pace and goals</div>
+              <div className="loading-progress-line">
+                <span />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -556,7 +651,7 @@ export default function Journey() {
           <div className="progress-card">
             <div className="progress-header">
               <span className="level-badge">Level {level}</span>
-              <span className="xp-count">{xp} XP</span>
+              <span className="xp-count">{displayXp} XP</span>
             </div>
             <div className="xp-progress-bar">
               <div className="xp-progress-fill" style={{ width: `${xpProgressPercent}%` }} />
@@ -581,7 +676,7 @@ export default function Journey() {
 
           <div className="challenges-container">
             {visibleCompleted.map((c) => (
-              <div key={c.id} className="challenge-card completed">
+              <div key={c.id} className={`challenge-card completed ${completedFxChallengeId === c.id ? 'challenge-complete-burst' : ''}`}>
                 <div className="challenge-header">
                   <span className="challenge-number">Challenge {getChallengeNumber(c)}</span>
                   <div className="challenge-badges">
@@ -631,7 +726,7 @@ export default function Journey() {
             ))}
 
             {visibleCurrent && (
-              <div className="challenge-card current">
+              <div className={`challenge-card current ${unlockFxChallengeId === visibleCurrent.id ? 'challenge-unlock-enter' : ''}`}>
                 <div className="challenge-header">
                   <span className="challenge-number">Challenge {getChallengeNumber(visibleCurrent)} • Ready When You Are</span>
                   <div className="challenge-badges">
@@ -798,6 +893,12 @@ export default function Journey() {
         <div className="modal" onClick={(e) => e.stopPropagation()}>
           <h2>Challenge {selectedChallenge ? getChallengeNumber(selectedChallenge) : 0}: {selectedChallenge?.title ?? 'Details'}</h2>
           <p className="modal-subtitle">{selectedChallenge ? difficultyLabel(selectedChallenge.difficulty) : 'Challenge Details'}</p>
+          {loadingInsights && (
+            <div className="journey-inline-loader" role="status" aria-live="polite">
+              <span className="journey-inline-loader-spinner" />
+              <span>Loading details...</span>
+            </div>
+          )}
           <div className="detail-section">
             <h3>Your Success Timeline</h3>
             {!selectedInsights && (
@@ -875,6 +976,12 @@ export default function Journey() {
             Challenge {selectedChallenge ? getChallengeNumber(selectedChallenge) : 0}: {selectedChallenge?.title ?? 'Brief small talk'}
           </h2>
           <p className="modal-subtitle">{selectedChallenge ? difficultyLabel(selectedChallenge.difficulty) : 'Challenge Details'}</p>
+          {loadingInsights && (
+            <div className="journey-inline-loader" role="status" aria-live="polite">
+              <span className="journey-inline-loader-spinner" />
+              <span>Loading details...</span>
+            </div>
+          )}
           <div className="detail-section">
             <h3>Full Challenge Breakdown</h3>
             {(

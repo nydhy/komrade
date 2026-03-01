@@ -53,6 +53,11 @@ export async function getMe(token: string): Promise<UserMe> {
   return get<UserMe>('/auth/me', token)
 }
 
+/** Get current user with cache-busting to ensure fresh location data. */
+export async function getMeFresh(token: string): Promise<UserMe> {
+  return get<UserMe>(`/auth/me?_=${Date.now()}`, token)
+}
+
 export async function updateProfile(data: UpdateProfileRequest): Promise<UserMe> {
   const token = getToken()
   if (!token) throw new Error('Not authenticated')

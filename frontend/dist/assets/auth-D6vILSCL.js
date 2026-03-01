@@ -1,1 +1,0 @@
-import{g as e,p as r,a}from"./http-vazCWv24.js";import{g as o}from"./index-g3GU5JoN.js";async function i(t){return r("/auth/login",t)}async function c(t){return r("/auth/register",t)}async function g(t){return e("/auth/me",t)}async function f(t){const n=o();if(!n)throw new Error("Not authenticated");return a("/auth/me",t,n)}export{g,i as l,c as r,f as u};
